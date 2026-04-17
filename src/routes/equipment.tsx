@@ -153,15 +153,15 @@ function EquipmentPage() {
       image_url = data.publicUrl;
     }
 
-    const payload: Record<string, unknown> = {
+    const payload = {
       name: form.name.trim(),
       model: form.model.trim() || null,
       serial_number: form.serial_number.trim(),
       last_calibration_date: form.last_calibration_date,
       validity_months: form.validity_months,
       notes: form.notes.trim() || null,
+      ...(image_url ? { image_url } : {}),
     };
-    if (image_url) payload.image_url = image_url;
 
     const { error } = editingId
       ? await supabase.from("equipment").update(payload).eq("id", editingId)
