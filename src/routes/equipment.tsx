@@ -165,7 +165,7 @@ function EquipmentPage() {
 
     const { error } = editingId
       ? await supabase.from("equipment").update(payload).eq("id", editingId)
-      : await supabase.from("equipment").insert(payload);
+      : await supabase.from("equipment").insert([payload]);
 
     setSaving(false);
     if (error) {
