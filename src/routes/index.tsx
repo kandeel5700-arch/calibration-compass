@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Boxes, AlertTriangle, Clock, CheckCircle2, TrendingUp } from "lucide-react";
+import { Boxes, AlertTriangle, Clock, CheckCircle2, TrendingUp, CalendarClock, Sparkles } from "lucide-react";
 import {
   PieChart,
   Pie,
@@ -15,6 +15,8 @@ import {
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
+import { useAuth } from "@/hooks/useAuth";
+import { LiveClock } from "@/components/LiveClock";
 import { getStatus, STATUS_LABELS, STATUS_COLORS, daysUntil, type Equipment, type EquipmentStatus } from "@/lib/equipment";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -30,9 +32,17 @@ export const Route = createFileRoute("/")({
 type FilterKey = "all" | EquipmentStatus;
 
 function Dashboard() {
+  const { user } = useAuth();
   const [items, setItems] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterKey | null>(null);
+
+  const greeting = useMemo(() => {
+    const h = new Date().getHours();
+    if (h < 12) return "صباح الخير";
+    if (h < 18) return "مساء الخير";
+    return "مساء النور";
+  }, []);
 
   useEffect(() => {
     load();
@@ -83,14 +93,23 @@ function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between flex-wrap gap-3">
+      <header className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">الداشبورد</h1>
+          <div className="flex items-center gap-2 text-primary text-sm font-semibold">
+            <Sparkles className="w-4 h-4" />
+            {greeting}
+          </div>
+          <h1 className="text-2xl md:text-3xl font-bold mt-1">
+            مرحباً، <span className="text-gradient-primary">{user?.email?.split("@")[0]}</span>
+          </h1>
           <p className="text-muted-foreground text-sm mt-1">نظرة عامة على حالة جميع الأجهزة</p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground glass-card px-3 py-2 rounded-lg">
-          <TrendingUp className="w-4 h-4 text-primary" />
-          تحديث مباشر
+        <div className="flex items-center gap-2 flex-wrap">
+          <LiveClock compact />
+          <div className="flex items-center gap-2 text-xs text-muted-foreground glass-card px-3 py-2 rounded-lg">
+            <TrendingUp className="w-4 h-4 text-primary" />
+            تحديث مباشر
+          </div>
         </div>
       </header>
 
