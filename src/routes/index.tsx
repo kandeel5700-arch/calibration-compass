@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Boxes, AlertTriangle, Clock, CheckCircle2, TrendingUp } from "lucide-react";
 import {
   PieChart,
@@ -15,8 +15,9 @@ import {
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
-import { getStatus, type Equipment } from "@/lib/equipment";
+import { getStatus, STATUS_LABELS, STATUS_COLORS, daysUntil, type Equipment, type EquipmentStatus } from "@/lib/equipment";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/")({
   component: () => (
@@ -26,9 +27,12 @@ export const Route = createFileRoute("/")({
   ),
 });
 
+type FilterKey = "all" | EquipmentStatus;
+
 function Dashboard() {
   const [items, setItems] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<FilterKey | null>(null);
 
   useEffect(() => {
     load();
@@ -51,6 +55,19 @@ function Dashboard() {
   const expired = items.filter((i) => getStatus(i) === "expired").length;
   const soon = items.filter((i) => getStatus(i) === "soon").length;
   const valid = items.filter((i) => getStatus(i) === "valid").length;
+
+  const filteredItems = useMemo(() => {
+    if (!filter) return [];
+    if (filter === "all") return items;
+    return items.filter((i) => getStatus(i) === filter);
+  }, [filter, items]);
+
+  const dialogTitle =
+    filter === "all"
+      ? "إجمالي الأجهزة"
+      : filter
+        ? STATUS_LABELS[filter]
+        : "";
 
   const pieData = [
     { name: "سليم", value: valid, color: "oklch(0.68 0.16 165)" },
@@ -78,10 +95,10 @@ function Dashboard() {
       </header>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={Boxes} label="إجمالي الأجهزة" value={total} accent="primary" />
-        <StatCard icon={CheckCircle2} label="سليم" value={valid} accent="success" />
-        <StatCard icon={Clock} label="قارب على الانتهاء" value={soon} accent="warning" />
-        <StatCard icon={AlertTriangle} label="منتهي الصلاحية" value={expired} accent="destructive" />
+        <StatCard icon={Boxes} label="إجمالي الأجهزة" value={total} accent="primary" onClick={() => setFilter("all")} />
+        <StatCard icon={CheckCircle2} label="سليم" value={valid} accent="success" onClick={() => setFilter("valid")} />
+        <StatCard icon={Clock} label="قارب على الانتهاء" value={soon} accent="warning" onClick={() => setFilter("soon")} />
+        <StatCard icon={AlertTriangle} label="منتهي الصلاحية" value={expired} accent="destructive" onClick={() => setFilter("expired")} />
       </div>
 
       {loading ? (
@@ -132,6 +149,49 @@ function Dashboard() {
           </ChartCard>
         </div>
       )}
+
+      <Dialog open={filter !== null} onOpenChange={(o) => !o && setFilter(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">
+              {dialogTitle} <span className="text-muted-foreground text-sm">({filteredItems.length})</span>
+            </DialogTitle>
+          </DialogHeader>
+          {filteredItems.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">لا توجد أجهزة في هذه الفئة</p>
+          ) : (
+            <ul className="space-y-2 mt-2">
+              {filteredItems.map((eq) => {
+                const st = getStatus(eq);
+                const days = daysUntil(eq.next_calibration_date);
+                return (
+                  <li
+                    key={eq.id}
+                    className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/50 bg-card/40 hover:bg-card/70 transition"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold truncate">{eq.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {eq.model ? `${eq.model} • ` : ""}
+                        {eq.serial_number}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        المعايرة القادمة: {eq.next_calibration_date}
+                        {st === "expired"
+                          ? ` • متأخر ${Math.abs(days)} يوم`
+                          : ` • باقي ${days} يوم`}
+                      </p>
+                    </div>
+                    <span className={cn("text-xs px-2 py-1 rounded-md border whitespace-nowrap", STATUS_COLORS[st])}>
+                      {STATUS_LABELS[st]}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -148,16 +208,20 @@ function StatCard({
   label,
   value,
   accent,
+  onClick,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: number;
   accent: keyof typeof accentMap;
+  onClick?: () => void;
 }) {
   return (
-    <div
+    <button
+      type="button"
+      onClick={onClick}
       className={cn(
-        "rounded-2xl p-5 border bg-gradient-to-br shadow-card transition-transform hover:scale-[1.02]",
+        "text-right rounded-2xl p-5 border bg-gradient-to-br shadow-card transition-transform hover:scale-[1.02] cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/40",
         accentMap[accent]
       )}
     >
@@ -168,7 +232,7 @@ function StatCard({
         </div>
         <Icon className="w-8 h-8 md:w-10 md:h-10 opacity-80" />
       </div>
-    </div>
+    </button>
   );
 }
 
