@@ -14,16 +14,152 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      calibration_history: {
+        Row: {
+          calibration_date: string
+          created_at: string
+          equipment_id: string
+          id: string
+          notes: string | null
+          performed_by: string | null
+          validity_months: number
+        }
+        Insert: {
+          calibration_date: string
+          created_at?: string
+          equipment_id: string
+          id?: string
+          notes?: string | null
+          performed_by?: string | null
+          validity_months: number
+        }
+        Update: {
+          calibration_date?: string
+          created_at?: string
+          equipment_id?: string
+          id?: string
+          notes?: string | null
+          performed_by?: string | null
+          validity_months?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calibration_history_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipment: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          image_url: string | null
+          last_calibration_date: string
+          model: string | null
+          name: string
+          next_calibration_date: string
+          notes: string | null
+          serial_number: string
+          updated_at: string
+          validity_months: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string | null
+          last_calibration_date: string
+          model?: string | null
+          name: string
+          next_calibration_date: string
+          notes?: string | null
+          serial_number: string
+          updated_at?: string
+          validity_months?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string | null
+          last_calibration_date?: string
+          model?: string | null
+          name?: string
+          next_calibration_date?: string
+          notes?: string | null
+          serial_number?: string
+          updated_at?: string
+          validity_months?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +286,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "viewer"],
+    },
   },
 } as const
