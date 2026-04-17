@@ -169,6 +169,42 @@ function Dashboard() {
         </div>
       )}
 
+      {!loading && total > 0 && (
+        <div className="glass-card rounded-2xl p-5 shadow-card">
+          <div className="flex items-center gap-2 mb-4">
+            <CalendarClock className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">أقرب 5 معايرات قادمة</h3>
+          </div>
+          <ul className="space-y-2">
+            {items.slice(0, 5).map((eq) => {
+              const st = getStatus(eq);
+              const days = daysUntil(eq.next_calibration_date);
+              return (
+                <li
+                  key={eq.id}
+                  className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/50 bg-card/40 hover:bg-card/70 transition"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold truncate">{eq.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {eq.serial_number} • تاريخ المعايرة: {eq.next_calibration_date}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className={cn("text-xs px-2 py-1 rounded-md border whitespace-nowrap", STATUS_COLORS[st])}>
+                      {STATUS_LABELS[st]}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground font-mono">
+                      {days < 0 ? `متأخر ${Math.abs(days)}ي` : `${days} يوم`}
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
       <Dialog open={filter !== null} onOpenChange={(o) => !o && setFilter(null)}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
