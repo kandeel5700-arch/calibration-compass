@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { LiveClock } from "@/components/LiveClock";
 
 const NAV = [
   { to: "/", label: "الداشبورد", icon: LayoutDashboard, adminOnly: false },
@@ -79,6 +80,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="p-4 border-t border-sidebar-border space-y-3">
+          <LiveClock />
           <div className="px-3 py-2 rounded-lg bg-sidebar-accent/50">
             <p className="text-xs text-muted-foreground">مسجّل كـ</p>
             <p className="text-sm font-medium truncate">{user?.email}</p>
