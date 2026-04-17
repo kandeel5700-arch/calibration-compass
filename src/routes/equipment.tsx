@@ -160,6 +160,7 @@ function EquipmentPage() {
       last_calibration_date: form.last_calibration_date,
       validity_months: form.validity_months,
       notes: form.notes.trim() || null,
+      next_calibration_date: form.last_calibration_date, // overwritten by trigger
       ...(image_url ? { image_url } : {}),
     };
 
