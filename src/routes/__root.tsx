@@ -1,6 +1,7 @@
 import { Outlet, createRootRoute, HeadContent, Scripts, Link } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/hooks/useAuth";
+import { ThemeProvider } from "@/hooks/useTheme";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -28,14 +29,12 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "جرد أجهزة المساحة" },
-      { name: "description", content: "نظام احترافي لإدارة وجرد أجهزة المساحة وتتبع المعايرات" },
-      { property: "og:title", content: "جرد أجهزة المساحة" },
-      { name: "twitter:title", content: "جرد أجهزة المساحة" },
-      { property: "og:description", content: "نظام احترافي لإدارة وجرد أجهزة المساحة وتتبع المعايرات" },
-      { name: "twitter:description", content: "نظام احترافي لإدارة وجرد أجهزة المساحة وتتبع المعايرات" },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/42a3d885-e255-49a7-841b-ac50ce8acef5/id-preview-17ddf952--62a0c63c-ce00-43b7-8502-545142fa925d.lovable.app-1776432542477.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/42a3d885-e255-49a7-841b-ac50ce8acef5/id-preview-17ddf952--62a0c63c-ce00-43b7-8502-545142fa925d.lovable.app-1776432542477.png" },
+      { title: "UECC Survey" },
+      { name: "description", content: "UECC Survey — نظام احترافي لإدارة وجرد أجهزة المساحة وتتبع المعايرات" },
+      { property: "og:title", content: "UECC Survey" },
+      { name: "twitter:title", content: "UECC Survey" },
+      { property: "og:description", content: "UECC Survey — نظام احترافي لإدارة وجرد أجهزة المساحة وتتبع المعايرات" },
+      { name: "twitter:description", content: "UECC Survey — نظام احترافي لإدارة وجرد أجهزة المساحة وتتبع المعايرات" },
       { name: "twitter:card", content: "summary_large_image" },
       { property: "og:type", content: "website" },
     ],
@@ -62,9 +61,11 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   return (
-    <AuthProvider>
-      <Outlet />
-      <Toaster richColors position="top-center" />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <Outlet />
+        <Toaster richColors position="top-center" />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
