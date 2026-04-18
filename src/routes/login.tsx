@@ -1,10 +1,12 @@
-import { createFileRoute, useNavigate, Navigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Navigate, Link } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { Compass, Loader2 } from "lucide-react";
+import { Loader2, LogIn } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Logo } from "@/components/Logo";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
@@ -41,14 +43,13 @@ function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
+      <div className="absolute top-4 left-4"><ThemeToggle /></div>
       <div className="w-full max-w-md">
         <div className="glass-card rounded-2xl shadow-luxe p-8 md:p-10 animate-fade-up">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center shadow-luxe mb-4">
-              <Compass className="w-8 h-8 text-primary-foreground" />
-            </div>
-            <h1 className="text-2xl font-bold text-gradient-primary">جرد أجهزة المساحة</h1>
+            <Logo size={72} />
+            <h1 className="text-2xl font-bold text-gradient-primary mt-4">UECC Survey</h1>
             <p className="text-sm text-muted-foreground mt-2">سجّل الدخول للوصول إلى النظام</p>
           </div>
 
@@ -63,7 +64,7 @@ function LoginPage() {
                 required
                 dir="ltr"
                 className="text-left"
-                placeholder="admin@example.com"
+                placeholder="you@example.com"
               />
             </div>
             <div className="space-y-2">
@@ -80,21 +81,16 @@ function LoginPage() {
             <Button
               type="submit"
               disabled={submitting}
-              className="w-full gradient-primary text-primary-foreground font-semibold shadow-luxe h-11"
+              className="w-full gradient-primary text-primary-foreground font-semibold shadow-luxe h-11 gap-2"
             >
-              {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "تسجيل الدخول"}
+              {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (<><LogIn className="w-4 h-4" /> تسجيل الدخول</>)}
             </Button>
           </form>
 
-          <p className="text-xs text-muted-foreground mt-6 text-center leading-relaxed">
-            لا يوجد تسجيل ذاتي. أول حساب يتم إنشاؤه عبر صفحة التسجيل الأولى يصبح مدير النظام،
-            ثم يمكنه إضافة باقي المستخدمين.
+          <p className="text-xs text-muted-foreground mt-6 text-center">
+            ليس لديك حساب؟{" "}
+            <Link to="/signup" className="text-primary hover:underline font-semibold">إنشاء حساب</Link>
           </p>
-          <div className="mt-3 text-center">
-            <a href="/signup-first" className="text-xs text-primary hover:underline">
-              إنشاء أول حساب مدير
-            </a>
-          </div>
         </div>
       </div>
     </div>
