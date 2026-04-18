@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import { UserPlus, Trash2, Shield, User as UserIcon } from "lucide-react";
+import { UserPlus, Trash2, Shield, User as UserIcon, Clock, Check, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Protected } from "@/components/Protected";
@@ -33,10 +33,12 @@ interface Profile {
   created_at: string;
 }
 
+type AppRole = "admin" | "viewer" | "pending";
+
 function UsersPage() {
   const { user: currentUser } = useAuth();
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [roles, setRoles] = useState<Record<string, "admin" | "viewer">>({});
+  const [roles, setRoles] = useState<Record<string, AppRole>>({});
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [pwdOpen, setPwdOpen] = useState(false);
@@ -59,8 +61,8 @@ function UsersPage() {
       supabase.from("user_roles").select("user_id,role"),
     ]);
     setProfiles((prof ?? []) as Profile[]);
-    const map: Record<string, "admin" | "viewer"> = {};
-    (r ?? []).forEach((row: { user_id: string; role: "admin" | "viewer" }) => {
+    const map: Record<string, AppRole> = {};
+    (r ?? []).forEach((row: { user_id: string; role: AppRole }) => {
       // admin wins if user has multiple roles
       if (map[row.user_id] !== "admin") map[row.user_id] = row.role;
     });
@@ -71,7 +73,6 @@ function UsersPage() {
   async function handleAdd(e: FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    // Sign up the user via standard signup (will trigger handle_new_user; gives 'viewer' since not first)
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
@@ -85,9 +86,10 @@ function UsersPage() {
       setSubmitting(false);
       return;
     }
-    // If admin role requested, add it
-    if (role === "admin" && data.user) {
-      await supabase.from("user_roles").insert({ user_id: data.user.id, role: "admin" });
+    // Admin-created accounts are pre-approved with chosen role
+    if (data.user) {
+      await supabase.from("user_roles").delete().eq("user_id", data.user.id);
+      await supabase.from("user_roles").insert({ user_id: data.user.id, role });
     }
     toast.success("تم إنشاء المستخدم");
     setAddOpen(false);
@@ -99,16 +101,28 @@ function UsersPage() {
     setTimeout(load, 800);
   }
 
-  async function changeRole(userId: string, newRole: "admin" | "viewer") {
+  async function changeRole(userId: string, newRole: AppRole) {
     if (userId === currentUser?.id) {
       toast.error("لا يمكنك تغيير صلاحياتك الخاصة");
       return;
     }
-    // delete existing roles for user, insert new
     await supabase.from("user_roles").delete().eq("user_id", userId);
     const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: newRole });
     if (error) toast.error("فشل التحديث", { description: error.message });
     else toast.success("تم تحديث الصلاحية");
+    load();
+  }
+
+  async function approve(userId: string, asRole: "viewer" | "admin" = "viewer") {
+    await changeRole(userId, asRole);
+    toast.success("تمت الموافقة على الحساب");
+  }
+
+  async function reject(userId: string) {
+    if (!confirm("رفض هذا الطلب وحذف بيانات المستخدم؟")) return;
+    await supabase.from("user_roles").delete().eq("user_id", userId);
+    await supabase.from("profiles").delete().eq("user_id", userId);
+    toast.success("تم رفض الطلب");
     load();
   }
 
@@ -123,12 +137,17 @@ function UsersPage() {
     }
   }
 
+  const pending = profiles.filter((p) => roles[p.user_id] === "pending");
+  const active = profiles.filter((p) => roles[p.user_id] !== "pending");
+
   return (
     <div className="space-y-6">
       <header className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">المستخدمون</h1>
-          <p className="text-muted-foreground text-sm mt-1">{profiles.length} مستخدم</p>
+          <p className="text-muted-foreground text-sm mt-1">
+            {profiles.length} مستخدم • {pending.length} في انتظار الموافقة
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setPwdOpen(true)}>تغيير كلمة المرور</Button>
@@ -137,6 +156,42 @@ function UsersPage() {
           </Button>
         </div>
       </header>
+
+      {/* Pending approvals */}
+      {pending.length > 0 && (
+        <div className="glass-card rounded-2xl overflow-hidden shadow-card border-2 border-amber-500/40">
+          <div className="bg-amber-500/10 px-4 py-3 flex items-center gap-2 border-b border-amber-500/30">
+            <Clock className="w-5 h-5 text-amber-500" />
+            <h2 className="font-bold text-amber-600 dark:text-amber-400">طلبات تسجيل بانتظار الموافقة ({pending.length})</h2>
+          </div>
+          <div className="divide-y divide-border">
+            {pending.map((p) => (
+              <div key={p.user_id} className="p-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+                    <UserIcon className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">{p.full_name ?? "—"}</p>
+                    <p className="text-xs text-muted-foreground" dir="ltr">{p.email}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => approve(p.user_id, "viewer")} className="gap-1">
+                    <Check className="w-4 h-4" /> موافقة كمشاهد
+                  </Button>
+                  <Button size="sm" onClick={() => approve(p.user_id, "admin")} className="gap-1 gradient-primary text-primary-foreground">
+                    <Shield className="w-4 h-4" /> موافقة كمدير
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => reject(p.user_id)} className="gap-1">
+                    <X className="w-4 h-4" /> رفض
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="glass-card rounded-2xl overflow-hidden shadow-card">
         {loading ? (
@@ -153,8 +208,8 @@ function UsersPage() {
                 </tr>
               </thead>
               <tbody>
-                {profiles.map((p) => {
-                  const r = roles[p.user_id] ?? "viewer";
+                {active.map((p) => {
+                  const r = (roles[p.user_id] ?? "viewer") as "admin" | "viewer";
                   const isCurrent = p.user_id === currentUser?.id;
                   return (
                     <tr key={p.user_id} className="border-t border-border">
@@ -167,7 +222,7 @@ function UsersPage() {
                       </td>
                       <td className="p-3 text-muted-foreground">{p.email}</td>
                       <td className="p-3">
-                        <Select value={r} onValueChange={(v) => changeRole(p.user_id, v as "admin" | "viewer")} disabled={isCurrent}>
+                        <Select value={r} onValueChange={(v) => changeRole(p.user_id, v as AppRole)} disabled={isCurrent}>
                           <SelectTrigger className="w-32 h-8 text-xs">
                             <SelectValue />
                           </SelectTrigger>
@@ -207,7 +262,7 @@ function UsersPage() {
         <DialogContent dir="rtl">
           <DialogHeader>
             <DialogTitle>إضافة مستخدم جديد</DialogTitle>
-            <DialogDescription>سيتم إنشاء الحساب وإرسال رابط التأكيد للبريد.</DialogDescription>
+            <DialogDescription>الحسابات التي ينشئها الأدمن مفعّلة مباشرة بدون موافقة.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleAdd} className="space-y-4">
             <div className="space-y-2">
