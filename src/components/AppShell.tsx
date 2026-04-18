@@ -1,13 +1,15 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Boxes, Users, LogOut, Compass, Menu, X } from "lucide-react";
+import { Home, Boxes, Users, LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { LiveClock } from "@/components/LiveClock";
+import { Logo } from "@/components/Logo";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const NAV = [
-  { to: "/", label: "الداشبورد", icon: LayoutDashboard, adminOnly: false },
+  { to: "/", label: "الصفحة الرئيسية", icon: Home, adminOnly: false },
   { to: "/equipment", label: "الأجهزة", icon: Boxes, adminOnly: false },
   { to: "/users", label: "المستخدمون", icon: Users, adminOnly: true },
 ] as const;
@@ -28,14 +30,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Mobile top bar */}
       <header className="md:hidden flex items-center justify-between p-4 border-b border-border glass-card sticky top-0 z-40">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-lg gradient-primary flex items-center justify-center shadow-luxe">
-            <Compass className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <span className="font-bold text-lg">جرد المساحة</span>
+          <Logo size={36} />
+          <span className="font-bold text-lg text-gradient-primary">UECC Survey</span>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setOpen(!open)}>
-          {open ? <X /> : <Menu />}
-        </Button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Button variant="ghost" size="icon" onClick={() => setOpen(!open)}>
+            {open ? <X /> : <Menu />}
+          </Button>
+        </div>
       </header>
 
       {/* Sidebar */}
@@ -46,14 +49,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           open ? "flex" : "hidden md:flex"
         )}
       >
-        <div className="hidden md:flex items-center gap-3 p-6 border-b border-sidebar-border">
-          <div className="w-11 h-11 rounded-xl gradient-primary flex items-center justify-center shadow-luxe">
-            <Compass className="w-6 h-6 text-primary-foreground" />
+        <div className="hidden md:flex items-center justify-between gap-3 p-5 border-b border-sidebar-border">
+          <div className="flex items-center gap-3 min-w-0">
+            <Logo size={44} />
+            <div className="min-w-0">
+              <h1 className="font-bold text-base leading-tight text-gradient-primary truncate">UECC Survey</h1>
+              <p className="text-[11px] text-muted-foreground truncate">نظام إدارة المعايرة</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-bold text-base leading-tight">جرد المساحة</h1>
-            <p className="text-xs text-muted-foreground">نظام إدارة المعايرة</p>
-          </div>
+          <ThemeToggle />
         </div>
 
         <nav className="flex-1 p-4 space-y-1">

@@ -102,7 +102,7 @@ function Dashboard() {
           <h1 className="text-2xl md:text-3xl font-bold mt-1">
             مرحباً، <span className="text-gradient-primary">{user?.email?.split("@")[0]}</span>
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">نظرة عامة على حالة جميع الأجهزة</p>
+          <p className="text-muted-foreground text-sm mt-1">UECC Survey — نظرة عامة على حالة جميع الأجهزة</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <LiveClock compact />
