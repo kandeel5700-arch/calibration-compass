@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-type Role = "admin" | "viewer" | null;
+type Role = "admin" | "viewer" | "pending" | null;
 
 interface AuthCtx {
   session: Session | null;
@@ -10,6 +10,7 @@ interface AuthCtx {
   role: Role;
   loading: boolean;
   isAdmin: boolean;
+  isPending: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
@@ -74,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role,
         loading,
         isAdmin: role === "admin",
+        isPending: role === "pending",
         signIn,
         signOut,
       }}
