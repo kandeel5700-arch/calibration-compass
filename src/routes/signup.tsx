@@ -1,59 +1,29 @@
-import { createFileRoute, useNavigate, Navigate } from "@tanstack/react-router";
-import { useState, useEffect, type FormEvent } from "react";
-import { Compass, Loader2 } from "lucide-react";
+import { createFileRoute, useNavigate, Navigate, Link } from "@tanstack/react-router";
+import { useState, type FormEvent } from "react";
+import { Loader2, UserPlus, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Logo } from "@/components/Logo";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/signup")({
-  component: SignupFirstPage,
+  component: SignupPage,
 });
 
-function SignupFirstPage() {
+function SignupPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [hasUsers, setHasUsers] = useState<boolean | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    // Check if any user exists by counting profiles
-    supabase
-      .from("profiles")
-      .select("id", { count: "exact", head: true })
-      .then(({ count }) => setHasUsers((count ?? 0) > 0));
-  }, []);
+  const [done, setDone] = useState(false);
 
   if (user) return <Navigate to="/" />;
-
-  if (hasUsers === null) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (hasUsers) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="glass-card rounded-2xl shadow-luxe p-8 max-w-md text-center">
-          <h1 className="text-xl font-bold mb-3">تم إنشاء حساب المدير مسبقاً</h1>
-          <p className="text-sm text-muted-foreground mb-6">
-            يمكنك تسجيل الدخول مباشرة. إضافة مستخدمين جدد تتم من قبل المدير من داخل النظام.
-          </p>
-          <Button onClick={() => navigate({ to: "/login" })} className="gradient-primary text-primary-foreground">
-            الذهاب لتسجيل الدخول
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -72,20 +42,39 @@ function SignupFirstPage() {
       toast.error("فشل إنشاء الحساب", { description: error.message });
       return;
     }
-    toast.success("تم إنشاء حساب المدير بنجاح", { description: "يمكنك الآن تسجيل الدخول" });
-    navigate({ to: "/login" });
+    setDone(true);
+    toast.success("تم إنشاء الحساب", { description: "بانتظار موافقة المدير" });
+  }
+
+  if (done) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 relative">
+        <div className="absolute top-4 left-4"><ThemeToggle /></div>
+        <div className="w-full max-w-md glass-card rounded-2xl shadow-luxe p-8 text-center animate-fade-up">
+          <div className="w-16 h-16 mx-auto rounded-full bg-success/20 flex items-center justify-center mb-4">
+            <CheckCircle2 className="w-9 h-9 text-success" />
+          </div>
+          <h1 className="text-xl font-bold mb-2">تم إنشاء حسابك بنجاح</h1>
+          <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+            حسابك الآن قيد المراجعة من قِبَل المدير. ستتمكن من الدخول بمجرد الموافقة على طلبك.
+          </p>
+          <Button onClick={() => navigate({ to: "/login" })} className="gradient-primary text-primary-foreground w-full">
+            الذهاب لتسجيل الدخول
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
+      <div className="absolute top-4 left-4"><ThemeToggle /></div>
       <div className="w-full max-w-md glass-card rounded-2xl shadow-luxe p-8 animate-fade-up">
         <div className="flex flex-col items-center mb-6">
-          <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center shadow-luxe mb-3">
-            <Compass className="w-8 h-8 text-primary-foreground" />
-          </div>
-          <h1 className="text-2xl font-bold text-gradient-primary">إنشاء حساب المدير</h1>
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            هذه أول مرة تستخدم فيها النظام. سيتم منح هذا الحساب صلاحيات مدير النظام.
+          <Logo size={64} />
+          <h1 className="text-2xl font-bold text-gradient-primary mt-4">إنشاء حساب جديد</h1>
+          <p className="text-xs text-muted-foreground mt-2 text-center leading-relaxed">
+            بعد إنشاء حسابك سيتم مراجعته من قبل المدير قبل تفعيله.
           </p>
         </div>
 
@@ -118,11 +107,15 @@ function SignupFirstPage() {
           <Button
             type="submit"
             disabled={submitting}
-            className="w-full gradient-primary text-primary-foreground h-11 font-semibold shadow-luxe"
+            className="w-full gradient-primary text-primary-foreground h-11 font-semibold shadow-luxe gap-2"
           >
-            {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "إنشاء حساب المدير"}
+            {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (<><UserPlus className="w-4 h-4" /> إنشاء الحساب</>)}
           </Button>
         </form>
+        <p className="text-xs text-muted-foreground mt-6 text-center">
+          لديك حساب بالفعل؟{" "}
+          <Link to="/login" className="text-primary hover:underline font-semibold">تسجيل الدخول</Link>
+        </p>
       </div>
     </div>
   );
