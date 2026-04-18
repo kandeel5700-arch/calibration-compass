@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Home, Boxes, Users, LogOut, Menu, X } from "lucide-react";
+import { Home, Boxes, Users, LogOut, Menu, X, Clock } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 const NAV = [
   { to: "/", label: "الصفحة الرئيسية", icon: Home, adminOnly: false },
   { to: "/equipment", label: "الأجهزة", icon: Boxes, adminOnly: false },
+  { to: "/attendance", label: "الحضور والانصراف", icon: Clock, adminOnly: false },
   { to: "/users", label: "المستخدمون", icon: Users, adminOnly: true },
 ] as const;
 
