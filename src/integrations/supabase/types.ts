@@ -127,6 +127,51 @@ export type Database = {
         }
         Relationships: []
       }
+      leave_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          end_date: string
+          id: string
+          leave_type: Database["public"]["Enums"]["leave_type"]
+          reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["leave_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          end_date: string
+          id?: string
+          leave_type?: Database["public"]["Enums"]["leave_type"]
+          reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["leave_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          end_date?: string
+          id?: string
+          leave_type?: Database["public"]["Enums"]["leave_type"]
+          reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["leave_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -214,6 +259,8 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "viewer" | "pending"
+      leave_status: "pending" | "approved" | "rejected"
+      leave_type: "annual" | "casual" | "sick" | "permission"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -342,6 +389,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "viewer", "pending"],
+      leave_status: ["pending", "approved", "rejected"],
+      leave_type: ["annual", "casual", "sick", "permission"],
     },
   },
 } as const
