@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Protected } from "@/components/Protected";
-import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -29,9 +28,7 @@ import {
 export const Route = createFileRoute("/attendance")({
   component: () => (
     <Protected>
-      <AppShell>
-        <AttendancePage />
-      </AppShell>
+      <AttendancePage />
     </Protected>
   ),
 });
