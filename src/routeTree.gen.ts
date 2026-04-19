@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LeavesRouteImport } from './routes/leaves'
@@ -28,6 +29,11 @@ const UsersRoute = UsersRouteImport.update({
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/leaves': typeof LeavesRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
+  '/reports': typeof ReportsRoute
   '/signup': typeof SignupRoute
   '/users': typeof UsersRoute
 }
@@ -92,6 +99,7 @@ export interface FileRoutesByTo {
   '/leaves': typeof LeavesRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
+  '/reports': typeof ReportsRoute
   '/signup': typeof SignupRoute
   '/users': typeof UsersRoute
 }
@@ -105,6 +113,7 @@ export interface FileRoutesById {
   '/leaves': typeof LeavesRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
+  '/reports': typeof ReportsRoute
   '/signup': typeof SignupRoute
   '/users': typeof UsersRoute
 }
@@ -119,6 +128,7 @@ export interface FileRouteTypes {
     | '/leaves'
     | '/login'
     | '/profile'
+    | '/reports'
     | '/signup'
     | '/users'
   fileRoutesByTo: FileRoutesByTo
@@ -131,6 +141,7 @@ export interface FileRouteTypes {
     | '/leaves'
     | '/login'
     | '/profile'
+    | '/reports'
     | '/signup'
     | '/users'
   id:
@@ -143,6 +154,7 @@ export interface FileRouteTypes {
     | '/leaves'
     | '/login'
     | '/profile'
+    | '/reports'
     | '/signup'
     | '/users'
   fileRoutesById: FileRoutesById
@@ -156,6 +168,7 @@ export interface RootRouteChildren {
   LeavesRoute: typeof LeavesRoute
   LoginRoute: typeof LoginRoute
   ProfileRoute: typeof ProfileRoute
+  ReportsRoute: typeof ReportsRoute
   SignupRoute: typeof SignupRoute
   UsersRoute: typeof UsersRoute
 }
@@ -174,6 +187,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -244,6 +264,7 @@ const rootRouteChildren: RootRouteChildren = {
   LeavesRoute: LeavesRoute,
   LoginRoute: LoginRoute,
   ProfileRoute: ProfileRoute,
+  ReportsRoute: ReportsRoute,
   SignupRoute: SignupRoute,
   UsersRoute: UsersRoute,
 }
