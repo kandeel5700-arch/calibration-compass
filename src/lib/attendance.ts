@@ -46,7 +46,10 @@ export function computeSession(checkIn: string, checkOut: string | null, dailyRa
   const ms = new Date(checkOut).getTime() - new Date(checkIn).getTime();
   const totalHours = Math.max(0, ms / 3_600_000);
   const regularHours = Math.min(totalHours, STANDARD_HOURS);
-  const overtimeHours = Math.max(0, totalHours - STANDARD_HOURS);
+  // Overtime: only count complete hours past the standard day.
+  // 59 minutes extra = 0 OT hours, 60 minutes = 1 OT hour, 1h 59m = 1 OT hour.
+  const rawOvertime = Math.max(0, totalHours - STANDARD_HOURS);
+  const overtimeHours = Math.floor(rawOvertime);
   const hr = hourlyRate(dailyRate);
   const pay = regularHours * hr + overtimeHours * hr;
   return { totalHours, regularHours, overtimeHours, pay };
