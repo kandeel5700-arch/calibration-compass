@@ -28,9 +28,7 @@ import {
 export const Route = createFileRoute("/attendance")({
   component: () => (
     <Protected>
-      <AppShell>
-        <AttendancePage />
-      </AppShell>
+      <AttendancePage />
     </Protected>
   ),
 });
