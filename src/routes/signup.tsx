@@ -20,6 +20,7 @@ function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [dailyRate, setDailyRate] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -29,12 +30,18 @@ function SignupPage() {
     e.preventDefault();
     setSubmitting(true);
     const redirectUrl = `${window.location.origin}/`;
+    const rate = parseFloat(dailyRate);
+    if (Number.isNaN(rate) || rate < 0) {
+      setSubmitting(false);
+      toast.error("الأجر اليومي غير صالح");
+      return;
+    }
     const { error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
       options: {
         emailRedirectTo: redirectUrl,
-        data: { full_name: fullName },
+        data: { full_name: fullName, daily_rate: rate },
       },
     });
     setSubmitting(false);
@@ -103,6 +110,22 @@ function SignupPage() {
               required
               minLength={6}
             />
+          </div>
+          <div className="space-y-2">
+            <Label>الأجر اليومي (بالجنيه)</Label>
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              inputMode="decimal"
+              value={dailyRate}
+              onChange={(e) => setDailyRate(e.target.value)}
+              required
+              placeholder="مثال: 400"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              يمكنك تعديله لاحقاً من صفحة الملف الشخصي
+            </p>
           </div>
           <Button
             type="submit"
