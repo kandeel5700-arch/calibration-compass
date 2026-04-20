@@ -307,28 +307,73 @@ function AttendancePage() {
       </Card>
 
       {/* Totals */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatTile icon={Clock} label="ساعات عادية" value={formatDuration(totals.regular)} />
         <StatTile icon={Timer} label="ساعات إضافية" value={formatDuration(totals.overtime)} accent />
+        <StatTile icon={TrendingUp} label="إجمالي الساعات" value={formatDuration(totals.totalHrs)} />
         <StatTile icon={Wallet} label="إجمالي المستحق" value={`${totals.pay.toFixed(2)} ج`} />
       </div>
 
       {/* Admin daily rate manager */}
       {isAdmin && <AdminSalaryPanel profiles={profiles} salaries={salaries} onSaved={loadAll} />}
 
+      {/* Filter & Search */}
+      <Card className="glass-card">
+        <CardContent className="p-4 grid gap-3 md:grid-cols-2">
+          <div className="relative">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="ابحث بالاسم أو الملاحظات..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pr-9"
+            />
+          </div>
+          <div className="relative">
+            <CalendarDays className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <Input
+              type="date"
+              value={dayFilter}
+              onChange={(e) => setDayFilter(e.target.value)}
+              className="pr-9"
+              min={toLocalDateTimeInput(wStart.toISOString()).slice(0, 10)}
+              max={toLocalDateTimeInput(wEnd.toISOString()).slice(0, 10)}
+            />
+            {(dayFilter || searchQuery) && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="absolute left-1 top-1/2 -translate-y-1/2 h-7 text-xs"
+                onClick={() => {
+                  setDayFilter("");
+                  setSearchQuery("");
+                }}
+              >
+                مسح
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Sessions list */}
       <Card className="glass-card">
         <CardHeader>
-          <CardTitle>سجل الجلسات</CardTitle>
+          <CardTitle className="flex items-center justify-between">
+            <span>سجل الجلسات</span>
+            <Badge variant="outline">{totals.sessions} جلسة</Badge>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
             <p className="text-muted-foreground text-center py-8">جارٍ التحميل...</p>
-          ) : rows.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">لا توجد جلسات في هذا الأسبوع</p>
+          ) : filteredRows.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">
+              {rows.length === 0 ? "لا توجد جلسات في هذا الأسبوع" : "لا توجد نتائج مطابقة للفلتر"}
+            </p>
           ) : (
             <div className="space-y-2">
-              {rows.map((r) => {
+              {filteredRows.map((r) => {
                 const rate = salaries[r.user_id] ?? 0;
                 const c = computeSession(r.check_in, r.check_out, rate);
                 const who = profiles[r.user_id];
