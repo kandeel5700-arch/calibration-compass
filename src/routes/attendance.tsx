@@ -153,20 +153,40 @@ function AttendancePage() {
     }
   }
 
-  // --- Compute totals for visible rows ---
+  // Filter rows by search & day
+  const filteredRows = useMemo(() => {
+    return rows.filter((r) => {
+      if (dayFilter) {
+        const d = new Date(r.check_in);
+        const pad = (n: number) => String(n).padStart(2, "0");
+        const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        if (key !== dayFilter) return false;
+      }
+      if (searchQuery.trim()) {
+        const q = searchQuery.trim().toLowerCase();
+        const who = profiles[r.user_id];
+        const hay = `${who?.full_name ?? ""} ${who?.email ?? ""} ${r.notes ?? ""}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [rows, searchQuery, dayFilter, profiles]);
+
+  // --- Compute totals for visible (filtered) rows ---
   const totals = useMemo(() => {
     let regular = 0,
       overtime = 0,
       pay = 0;
-    rows.forEach((r) => {
+    filteredRows.forEach((r) => {
       const rate = salaries[r.user_id] ?? 0;
       const c = computeSession(r.check_in, r.check_out, rate);
       regular += c.regularHours;
       overtime += c.overtimeHours;
       pay += c.pay;
     });
-    return { regular, overtime, pay };
-  }, [rows, salaries]);
+    const totalHrs = regular + overtime;
+    return { regular, overtime, pay, totalHrs, sessions: filteredRows.length };
+  }, [filteredRows, salaries]);
 
   // Live session timer
   const liveDuration = openCheckIn
