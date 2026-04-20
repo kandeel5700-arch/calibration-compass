@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { LogIn, LogOut as LogOutIcon, Pencil, Save, ChevronRight, ChevronLeft, Clock, Wallet, Timer, Sparkles } from "lucide-react";
+import { LogIn, LogOut as LogOutIcon, Pencil, Save, ChevronRight, ChevronLeft, Clock, Wallet, Timer, Sparkles, Search, CalendarDays, TrendingUp } from "lucide-react";
 import {
   STANDARD_HOURS,
   computeSession,
@@ -61,6 +61,8 @@ function AttendancePage() {
   const [openCheckIn, setOpenCheckIn] = useState<AttendanceRow | null>(null); // ongoing
   const [editing, setEditing] = useState<AttendanceRow | null>(null);
   const [now, setNow] = useState(Date.now());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [dayFilter, setDayFilter] = useState<string>("");
 
   const wStart = useMemo(() => weekStart(weekRef), [weekRef]);
   const wEnd = useMemo(() => weekEnd(weekRef), [weekRef]);
@@ -151,20 +153,40 @@ function AttendancePage() {
     }
   }
 
-  // --- Compute totals for visible rows ---
+  // Filter rows by search & day
+  const filteredRows = useMemo(() => {
+    return rows.filter((r) => {
+      if (dayFilter) {
+        const d = new Date(r.check_in);
+        const pad = (n: number) => String(n).padStart(2, "0");
+        const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        if (key !== dayFilter) return false;
+      }
+      if (searchQuery.trim()) {
+        const q = searchQuery.trim().toLowerCase();
+        const who = profiles[r.user_id];
+        const hay = `${who?.full_name ?? ""} ${who?.email ?? ""} ${r.notes ?? ""}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [rows, searchQuery, dayFilter, profiles]);
+
+  // --- Compute totals for visible (filtered) rows ---
   const totals = useMemo(() => {
     let regular = 0,
       overtime = 0,
       pay = 0;
-    rows.forEach((r) => {
+    filteredRows.forEach((r) => {
       const rate = salaries[r.user_id] ?? 0;
       const c = computeSession(r.check_in, r.check_out, rate);
       regular += c.regularHours;
       overtime += c.overtimeHours;
       pay += c.pay;
     });
-    return { regular, overtime, pay };
-  }, [rows, salaries]);
+    const totalHrs = regular + overtime;
+    return { regular, overtime, pay, totalHrs, sessions: filteredRows.length };
+  }, [filteredRows, salaries]);
 
   // Live session timer
   const liveDuration = openCheckIn
@@ -191,7 +213,7 @@ function AttendancePage() {
               <div className="flex items-center gap-2 mt-1">
                 <Badge variant="secondary" className="gap-1">
                   <Wallet className="w-3 h-3" />
-                  اليومية: {myDailyRate.toFixed(2)} ج
+                  الأجر اليومي: {myDailyRate.toFixed(2)} ج
                 </Badge>
                 <Badge variant="outline" className="gap-1">
                   <Clock className="w-3 h-3" />
@@ -285,28 +307,73 @@ function AttendancePage() {
       </Card>
 
       {/* Totals */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatTile icon={Clock} label="ساعات عادية" value={formatDuration(totals.regular)} />
         <StatTile icon={Timer} label="ساعات إضافية" value={formatDuration(totals.overtime)} accent />
+        <StatTile icon={TrendingUp} label="إجمالي الساعات" value={formatDuration(totals.totalHrs)} />
         <StatTile icon={Wallet} label="إجمالي المستحق" value={`${totals.pay.toFixed(2)} ج`} />
       </div>
 
       {/* Admin daily rate manager */}
       {isAdmin && <AdminSalaryPanel profiles={profiles} salaries={salaries} onSaved={loadAll} />}
 
+      {/* Filter & Search */}
+      <Card className="glass-card">
+        <CardContent className="p-4 grid gap-3 md:grid-cols-2">
+          <div className="relative">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="ابحث بالاسم أو الملاحظات..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pr-9"
+            />
+          </div>
+          <div className="relative">
+            <CalendarDays className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <Input
+              type="date"
+              value={dayFilter}
+              onChange={(e) => setDayFilter(e.target.value)}
+              className="pr-9"
+              min={toLocalDateTimeInput(wStart.toISOString()).slice(0, 10)}
+              max={toLocalDateTimeInput(wEnd.toISOString()).slice(0, 10)}
+            />
+            {(dayFilter || searchQuery) && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="absolute left-1 top-1/2 -translate-y-1/2 h-7 text-xs"
+                onClick={() => {
+                  setDayFilter("");
+                  setSearchQuery("");
+                }}
+              >
+                مسح
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Sessions list */}
       <Card className="glass-card">
         <CardHeader>
-          <CardTitle>سجل الجلسات</CardTitle>
+          <CardTitle className="flex items-center justify-between">
+            <span>سجل الجلسات</span>
+            <Badge variant="outline">{totals.sessions} جلسة</Badge>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
             <p className="text-muted-foreground text-center py-8">جارٍ التحميل...</p>
-          ) : rows.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">لا توجد جلسات في هذا الأسبوع</p>
+          ) : filteredRows.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">
+              {rows.length === 0 ? "لا توجد جلسات في هذا الأسبوع" : "لا توجد نتائج مطابقة للفلتر"}
+            </p>
           ) : (
             <div className="space-y-2">
-              {rows.map((r) => {
+              {filteredRows.map((r) => {
                 const rate = salaries[r.user_id] ?? 0;
                 const c = computeSession(r.check_in, r.check_out, rate);
                 const who = profiles[r.user_id];
@@ -442,7 +509,7 @@ function AdminSalaryPanel({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Wallet className="w-5 h-5 text-primary" />
-          إدارة اليوميات (الأدمين فقط)
+          إدارة الأجر اليومي (الأدمين فقط)
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -471,7 +538,7 @@ function AdminSalaryPanel({
                     setEdits((prev) => ({ ...prev, [p.user_id]: e.target.value }))
                   }
                 />
-                <span className="text-xs text-muted-foreground">ج / يوم</span>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">ج / يوم</span>
                 <Button
                   size="icon"
                   variant={isEditing ? "default" : "outline"}
@@ -485,7 +552,7 @@ function AdminSalaryPanel({
           })}
         </div>
         <p className="text-xs text-muted-foreground mt-3">
-          ملاحظة: ساعة العمل العادية = اليومية ÷ {STANDARD_HOURS}. سعر الساعة الإضافية مساوٍ لسعر الساعة العادية.
+          ملاحظة: ساعة العمل العادية = الأجر اليومي ÷ {STANDARD_HOURS}. سعر الساعة الإضافية مساوٍ لسعر الساعة العادية.
         </p>
       </CardContent>
     </Card>
