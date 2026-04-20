@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { GoogleAuthButton } from "@/components/GoogleAuthButton";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
