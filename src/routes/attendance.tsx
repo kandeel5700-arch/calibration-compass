@@ -494,7 +494,7 @@ function AdminSalaryPanel({
       .upsert({ user_id: uid, daily_rate: val }, { onConflict: "user_id" });
     if (error) toast.error(error.message);
     else {
-      toast.success("تم حفظ اليومية ✓");
+      toast.success("تم حفظ الأجر اليومي ✓");
       setEdits((e) => {
         const n = { ...e };
         delete n[uid];

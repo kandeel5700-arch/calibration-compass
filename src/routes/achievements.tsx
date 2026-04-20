@@ -120,7 +120,7 @@ function AchievementsPage() {
             <p className="text-xs text-muted-foreground">سجل إنجازاتي</p>
             <h2 className="text-2xl font-bold">{name}</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              اليومية: <span className="font-semibold text-primary">{dailyRate.toFixed(2)} ج</span>
+              الأجر اليومي: <span className="font-semibold text-primary">{dailyRate.toFixed(2)} ج</span>
             </p>
           </div>
         </CardContent>
