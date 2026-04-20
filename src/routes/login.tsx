@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { GoogleAuthButton } from "@/components/GoogleAuthButton";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
@@ -86,6 +87,14 @@ function LoginPage() {
               {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (<><LogIn className="w-4 h-4" /> تسجيل الدخول</>)}
             </Button>
           </form>
+
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs text-muted-foreground">أو</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+
+          <GoogleAuthButton label="تسجيل الدخول بـ Google" />
 
           <p className="text-xs text-muted-foreground mt-6 text-center">
             ليس لديك حساب؟{" "}
