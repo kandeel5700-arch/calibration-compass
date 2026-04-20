@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { LogIn, LogOut as LogOutIcon, Pencil, Save, ChevronRight, ChevronLeft, Clock, Wallet, Timer, Sparkles } from "lucide-react";
+import { LogIn, LogOut as LogOutIcon, Pencil, Save, ChevronRight, ChevronLeft, Clock, Wallet, Timer, Sparkles, Search, CalendarDays, TrendingUp } from "lucide-react";
 import {
   STANDARD_HOURS,
   computeSession,
@@ -191,7 +191,7 @@ function AttendancePage() {
               <div className="flex items-center gap-2 mt-1">
                 <Badge variant="secondary" className="gap-1">
                   <Wallet className="w-3 h-3" />
-                  اليومية: {myDailyRate.toFixed(2)} ج
+                  الأجر اليومي: {myDailyRate.toFixed(2)} ج
                 </Badge>
                 <Badge variant="outline" className="gap-1">
                   <Clock className="w-3 h-3" />
@@ -442,7 +442,7 @@ function AdminSalaryPanel({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Wallet className="w-5 h-5 text-primary" />
-          إدارة اليوميات (الأدمين فقط)
+          إدارة الأجر اليومي (الأدمين فقط)
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -471,7 +471,7 @@ function AdminSalaryPanel({
                     setEdits((prev) => ({ ...prev, [p.user_id]: e.target.value }))
                   }
                 />
-                <span className="text-xs text-muted-foreground">ج / يوم</span>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">ج / يوم</span>
                 <Button
                   size="icon"
                   variant={isEditing ? "default" : "outline"}
@@ -485,7 +485,7 @@ function AdminSalaryPanel({
           })}
         </div>
         <p className="text-xs text-muted-foreground mt-3">
-          ملاحظة: ساعة العمل العادية = اليومية ÷ {STANDARD_HOURS}. سعر الساعة الإضافية مساوٍ لسعر الساعة العادية.
+          ملاحظة: ساعة العمل العادية = الأجر اليومي ÷ {STANDARD_HOURS}. سعر الساعة الإضافية مساوٍ لسعر الساعة العادية.
         </p>
       </CardContent>
     </Card>
