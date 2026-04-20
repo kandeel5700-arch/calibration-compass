@@ -130,6 +130,36 @@ function ProfilePage() {
         </CardContent>
       </Card>
 
+      <Card className="glass-card border-primary/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Wallet className="w-5 h-5 text-primary" />
+            الأجر اليومي
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div>
+            <Label>قيمة الأجر اليومي (بالجنيه)</Label>
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              inputMode="decimal"
+              value={dailyRate}
+              onChange={(e) => setDailyRate(e.target.value)}
+              disabled={loading}
+            />
+            <p className="text-[11px] text-muted-foreground mt-1">
+              ساعة العمل العادية = الأجر اليومي ÷ 8 · سعر الساعة الإضافية = نفس سعر الساعة العادية
+            </p>
+          </div>
+          <Button onClick={saveDailyRate} disabled={savingRate} className="gap-2 gradient-primary">
+            <Save className="w-4 h-4" />
+            {savingRate ? "جارٍ الحفظ..." : "حفظ الأجر اليومي"}
+          </Button>
+        </CardContent>
+      </Card>
+
       <Card className="glass-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
