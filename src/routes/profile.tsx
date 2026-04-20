@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { User as UserIcon, Mail, Shield, Save, KeyRound } from "lucide-react";
+import { User as UserIcon, Mail, Shield, Save, KeyRound, Wallet } from "lucide-react";
 
 export const Route = createFileRoute("/profile")({
   component: () => (
@@ -27,19 +27,34 @@ function ProfilePage() {
   const [pwd1, setPwd1] = useState("");
   const [pwd2, setPwd2] = useState("");
   const [savingPwd, setSavingPwd] = useState(false);
+  const [dailyRate, setDailyRate] = useState("");
+  const [savingRate, setSavingRate] = useState(false);
 
   useEffect(() => {
     (async () => {
       if (!user) return;
-      const { data } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      setFullName(data?.full_name ?? "");
+      const [{ data: prof }, { data: sal }] = await Promise.all([
+        supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle(),
+        supabase.from("user_salary").select("daily_rate").eq("user_id", user.id).maybeSingle(),
+      ]);
+      setFullName(prof?.full_name ?? "");
+      setDailyRate(sal?.daily_rate != null ? String(sal.daily_rate) : "0");
       setLoading(false);
     })();
   }, [user?.id]);
+
+  async function saveDailyRate() {
+    if (!user) return;
+    const val = parseFloat(dailyRate);
+    if (Number.isNaN(val) || val < 0) return toast.error("قيمة غير صالحة");
+    setSavingRate(true);
+    const { error } = await supabase
+      .from("user_salary")
+      .upsert({ user_id: user.id, daily_rate: val }, { onConflict: "user_id" });
+    setSavingRate(false);
+    if (error) toast.error(error.message);
+    else toast.success("تم حفظ الأجر اليومي ✓");
+  }
 
   async function saveName() {
     if (!user) return;
