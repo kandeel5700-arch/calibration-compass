@@ -88,6 +88,14 @@ function LoginPage() {
             </Button>
           </form>
 
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs text-muted-foreground">أو</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+
+          <GoogleAuthButton label="تسجيل الدخول بـ Google" />
+
           <p className="text-xs text-muted-foreground mt-6 text-center">
             ليس لديك حساب؟{" "}
             <Link to="/signup" className="text-primary hover:underline font-semibold">إنشاء حساب</Link>
