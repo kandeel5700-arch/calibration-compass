@@ -61,6 +61,8 @@ function AttendancePage() {
   const [openCheckIn, setOpenCheckIn] = useState<AttendanceRow | null>(null); // ongoing
   const [editing, setEditing] = useState<AttendanceRow | null>(null);
   const [now, setNow] = useState(Date.now());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [dayFilter, setDayFilter] = useState<string>("");
 
   const wStart = useMemo(() => weekStart(weekRef), [weekRef]);
   const wEnd = useMemo(() => weekEnd(weekRef), [weekRef]);
