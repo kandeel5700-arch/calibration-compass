@@ -11,11 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LeavesRouteImport } from './routes/leaves'
 import { Route as HelpRouteImport } from './routes/help'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as EquipmentRouteImport } from './routes/equipment'
 import { Route as AttendanceRouteImport } from './routes/attendance'
 import { Route as AchievementsRouteImport } from './routes/achievements'
@@ -29,6 +31,11 @@ const UsersRoute = UsersRouteImport.update({
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportsRoute = ReportsRouteImport.update({
@@ -54,6 +61,11 @@ const LeavesRoute = LeavesRouteImport.update({
 const HelpRoute = HelpRouteImport.update({
   id: '/help',
   path: '/help',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EquipmentRoute = EquipmentRouteImport.update({
@@ -82,11 +94,13 @@ export interface FileRoutesByFullPath {
   '/achievements': typeof AchievementsRoute
   '/attendance': typeof AttendanceRoute
   '/equipment': typeof EquipmentRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/help': typeof HelpRoute
   '/leaves': typeof LeavesRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/users': typeof UsersRoute
 }
@@ -95,11 +109,13 @@ export interface FileRoutesByTo {
   '/achievements': typeof AchievementsRoute
   '/attendance': typeof AttendanceRoute
   '/equipment': typeof EquipmentRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/help': typeof HelpRoute
   '/leaves': typeof LeavesRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/users': typeof UsersRoute
 }
@@ -109,11 +125,13 @@ export interface FileRoutesById {
   '/achievements': typeof AchievementsRoute
   '/attendance': typeof AttendanceRoute
   '/equipment': typeof EquipmentRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/help': typeof HelpRoute
   '/leaves': typeof LeavesRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/users': typeof UsersRoute
 }
@@ -124,11 +142,13 @@ export interface FileRouteTypes {
     | '/achievements'
     | '/attendance'
     | '/equipment'
+    | '/forgot-password'
     | '/help'
     | '/leaves'
     | '/login'
     | '/profile'
     | '/reports'
+    | '/reset-password'
     | '/signup'
     | '/users'
   fileRoutesByTo: FileRoutesByTo
@@ -137,11 +157,13 @@ export interface FileRouteTypes {
     | '/achievements'
     | '/attendance'
     | '/equipment'
+    | '/forgot-password'
     | '/help'
     | '/leaves'
     | '/login'
     | '/profile'
     | '/reports'
+    | '/reset-password'
     | '/signup'
     | '/users'
   id:
@@ -150,11 +172,13 @@ export interface FileRouteTypes {
     | '/achievements'
     | '/attendance'
     | '/equipment'
+    | '/forgot-password'
     | '/help'
     | '/leaves'
     | '/login'
     | '/profile'
     | '/reports'
+    | '/reset-password'
     | '/signup'
     | '/users'
   fileRoutesById: FileRoutesById
@@ -164,11 +188,13 @@ export interface RootRouteChildren {
   AchievementsRoute: typeof AchievementsRoute
   AttendanceRoute: typeof AttendanceRoute
   EquipmentRoute: typeof EquipmentRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   HelpRoute: typeof HelpRoute
   LeavesRoute: typeof LeavesRoute
   LoginRoute: typeof LoginRoute
   ProfileRoute: typeof ProfileRoute
   ReportsRoute: typeof ReportsRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
   UsersRoute: typeof UsersRoute
 }
@@ -187,6 +213,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reports': {
@@ -222,6 +255,13 @@ declare module '@tanstack/react-router' {
       path: '/help'
       fullPath: '/help'
       preLoaderRoute: typeof HelpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/equipment': {
@@ -260,14 +300,25 @@ const rootRouteChildren: RootRouteChildren = {
   AchievementsRoute: AchievementsRoute,
   AttendanceRoute: AttendanceRoute,
   EquipmentRoute: EquipmentRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   HelpRoute: HelpRoute,
   LeavesRoute: LeavesRoute,
   LoginRoute: LoginRoute,
   ProfileRoute: ProfileRoute,
   ReportsRoute: ReportsRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
   UsersRoute: UsersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
