@@ -260,8 +260,8 @@ function EquipmentPage() {
           <Button onClick={exportExcel} variant="outline" size="sm" className="gap-2">
             <FileSpreadsheet className="w-4 h-4" /> Excel
           </Button>
-          <Button onClick={exportPDF} variant="outline" size="sm" className="gap-2">
-            <FileText className="w-4 h-4" /> PDF
+          <Button onClick={exportPDF} variant="outline" size="sm" className="gap-2" disabled={exporting}>
+            <FileText className="w-4 h-4" /> {exporting ? "جارٍ..." : "PDF"}
           </Button>
           {isAdmin && (
             <Button onClick={openAdd} className="gap-2 gradient-primary text-primary-foreground shadow-luxe">
