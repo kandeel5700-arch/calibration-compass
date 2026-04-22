@@ -294,7 +294,15 @@ function EquipmentPage() {
         </Select>
       </div>
 
-      <div className="glass-card rounded-2xl overflow-hidden shadow-card">
+      <div ref={printRef} className="glass-card rounded-2xl overflow-hidden shadow-card bg-card">
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          <div>
+            <h2 className="font-bold text-lg">UECC — قائمة الأجهزة والمعايرات</h2>
+            <p className="text-xs text-muted-foreground">
+              {filtered.length} جهاز · {new Date().toLocaleDateString("ar-EG")}
+            </p>
+          </div>
+        </div>
         {loading ? (
           <div className="p-10 text-center text-muted-foreground">جاري التحميل...</div>
         ) : filtered.length === 0 ? (
