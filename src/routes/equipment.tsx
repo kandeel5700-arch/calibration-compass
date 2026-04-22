@@ -30,8 +30,8 @@ import {
 import { toast } from "sonner";
 import QRCode from "qrcode";
 import * as XLSX from "xlsx";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import { exportElementToPDF } from "@/lib/pdfExport";
+import { useRef } from "react";
 import { cn } from "@/lib/utils";
 import { getStatus, STATUS_LABELS, STATUS_COLORS, daysUntil, type Equipment } from "@/lib/equipment";
 
@@ -65,6 +65,8 @@ const emptyForm: FormState = {
 
 function EquipmentPage() {
   const { isAdmin } = useAuth();
+  const printRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
   const [items, setItems] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -230,29 +232,21 @@ function EquipmentPage() {
     toast.success("تم تصدير ملف Excel");
   }
 
-  function exportPDF() {
-    const doc = new jsPDF({ orientation: "landscape" });
-    doc.setFontSize(16);
-    doc.text("Survey Equipment Inventory", 14, 14);
-    doc.setFontSize(10);
-    doc.text(`Date: ${new Date().toISOString().slice(0, 10)}`, 14, 22);
-    autoTable(doc, {
-      startY: 28,
-      head: [["Name", "Model", "Serial", "Last Cal.", "Next Cal.", "Validity", "Status"]],
-      body: filtered.map((it) => [
-        it.name,
-        it.model ?? "-",
-        it.serial_number,
-        it.last_calibration_date,
-        it.next_calibration_date,
-        `${it.validity_months}m`,
-        getStatus(it).toUpperCase(),
-      ]),
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [16, 80, 60] },
-    });
-    doc.save(`equipment-${new Date().toISOString().slice(0, 10)}.pdf`);
-    toast.success("تم تصدير ملف PDF");
+  async function exportPDF() {
+    if (!printRef.current) return;
+    setExporting(true);
+    try {
+      await exportElementToPDF(
+        printRef.current,
+        `equipment-${new Date().toISOString().slice(0, 10)}.pdf`,
+        { orientation: "landscape" }
+      );
+      toast.success("تم تصدير PDF بجودة عالية");
+    } catch (e: any) {
+      toast.error("فشل تصدير PDF", { description: e?.message });
+    } finally {
+      setExporting(false);
+    }
   }
 
   return (
@@ -266,8 +260,8 @@ function EquipmentPage() {
           <Button onClick={exportExcel} variant="outline" size="sm" className="gap-2">
             <FileSpreadsheet className="w-4 h-4" /> Excel
           </Button>
-          <Button onClick={exportPDF} variant="outline" size="sm" className="gap-2">
-            <FileText className="w-4 h-4" /> PDF
+          <Button onClick={exportPDF} variant="outline" size="sm" className="gap-2" disabled={exporting}>
+            <FileText className="w-4 h-4" /> {exporting ? "جارٍ..." : "PDF"}
           </Button>
           {isAdmin && (
             <Button onClick={openAdd} className="gap-2 gradient-primary text-primary-foreground shadow-luxe">
@@ -300,7 +294,15 @@ function EquipmentPage() {
         </Select>
       </div>
 
-      <div className="glass-card rounded-2xl overflow-hidden shadow-card">
+      <div ref={printRef} className="glass-card rounded-2xl overflow-hidden shadow-card bg-card">
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          <div>
+            <h2 className="font-bold text-lg">UECC — قائمة الأجهزة والمعايرات</h2>
+            <p className="text-xs text-muted-foreground">
+              {filtered.length} جهاز · {new Date().toLocaleDateString("ar-EG")}
+            </p>
+          </div>
+        </div>
         {loading ? (
           <div className="p-10 text-center text-muted-foreground">جاري التحميل...</div>
         ) : filtered.length === 0 ? (

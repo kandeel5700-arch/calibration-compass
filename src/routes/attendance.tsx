@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
+import { exportElementToPDF } from "@/lib/pdfExport";
 import { Protected } from "@/components/Protected";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { LogIn, LogOut as LogOutIcon, Pencil, Save, ChevronRight, ChevronLeft, Clock, Wallet, Timer, Sparkles, Search, CalendarDays, TrendingUp } from "lucide-react";
+import { LogIn, LogOut as LogOutIcon, Pencil, Save, ChevronRight, ChevronLeft, Clock, Wallet, Timer, Sparkles, Search, CalendarDays, TrendingUp, FileText } from "lucide-react";
 import {
   STANDARD_HOURS,
   computeSession,
@@ -52,6 +53,8 @@ interface SalaryRow {
 
 function AttendancePage() {
   const { user, isAdmin } = useAuth();
+  const printRef = useRef<HTMLDivElement>(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const [weekRef, setWeekRef] = useState<Date>(new Date());
   const [rows, setRows] = useState<AttendanceRow[]>([]);
   const [profiles, setProfiles] = useState<Record<string, ProfileRow>>({});
@@ -197,6 +200,23 @@ function AttendancePage() {
     : null;
 
   const myName = profiles[user?.id ?? ""]?.full_name ?? user?.email ?? "مستخدم";
+
+  async function handleExportPdf() {
+    if (!printRef.current) return;
+    setExportingPdf(true);
+    try {
+      await exportElementToPDF(
+        printRef.current,
+        `attendance-${new Date().toISOString().slice(0, 10)}.pdf`,
+        { orientation: "portrait" }
+      );
+      toast.success("تم تصدير PDF بجودة عالية");
+    } catch (e: any) {
+      toast.error("فشل تصدير PDF", { description: e?.message });
+    } finally {
+      setExportingPdf(false);
+    }
+  }
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto" dir="rtl">
@@ -356,7 +376,19 @@ function AttendancePage() {
         </CardContent>
       </Card>
 
-      {/* Sessions list */}
+      {/* Sessions list (wrapped in printRef for PDF export) */}
+      <div ref={printRef} className="bg-background space-y-3 p-2 rounded-2xl">
+        <div className="flex items-center justify-between px-2">
+          <div>
+            <h2 className="font-bold text-lg">UECC — تقرير الحضور</h2>
+            <p className="text-xs text-muted-foreground">
+              {formatRange(wStart, wEnd)} · {totals.sessions} جلسة
+            </p>
+          </div>
+          <Button onClick={handleExportPdf} variant="outline" size="sm" className="gap-2 print:hidden" disabled={exportingPdf || filteredRows.length === 0}>
+            <FileText className="w-4 h-4" /> {exportingPdf ? "جارٍ..." : "تصدير PDF"}
+          </Button>
+        </div>
       <Card className="glass-card">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
@@ -427,6 +459,7 @@ function AttendancePage() {
           )}
         </CardContent>
       </Card>
+      </div>
 
       {editing && (
         <EditSessionDialog
