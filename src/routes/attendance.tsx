@@ -201,6 +201,23 @@ function AttendancePage() {
 
   const myName = profiles[user?.id ?? ""]?.full_name ?? user?.email ?? "مستخدم";
 
+  async function handleExportPdf() {
+    if (!printRef.current) return;
+    setExportingPdf(true);
+    try {
+      await exportElementToPDF(
+        printRef.current,
+        `attendance-${new Date().toISOString().slice(0, 10)}.pdf`,
+        { orientation: "portrait" }
+      );
+      toast.success("تم تصدير PDF بجودة عالية");
+    } catch (e: any) {
+      toast.error("فشل تصدير PDF", { description: e?.message });
+    } finally {
+      setExportingPdf(false);
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto" dir="rtl">
       {/* Hero - my info */}
