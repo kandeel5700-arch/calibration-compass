@@ -459,6 +459,7 @@ function AttendancePage() {
           )}
         </CardContent>
       </Card>
+      </div>
 
       {editing && (
         <EditSessionDialog
