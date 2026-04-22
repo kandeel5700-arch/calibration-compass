@@ -376,6 +376,26 @@ function AttendancePage() {
         </CardContent>
       </Card>
 
+      {/* Attendance rules */}
+      <Card className="glass-card border-primary/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <FileText className="w-5 h-5 text-primary" />
+            قوانين الحضور والانصراف
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-2 text-sm leading-relaxed list-disc pr-5 marker:text-primary">
+            <li>بداية يوم العمل الرسمي الساعة <strong>8:00 صباحاً</strong> — أي وقت قبل الـ 8 صباحاً لا يُحتسب ولا يُدفع عنه أجر.</li>
+            <li>اليوم العادي (السبت ما عدا) = <strong>8 ساعات</strong> عمل (من 8 ص حتى 4 م)، والأوفر تايم يبدأ بعد إتمام الـ 8 ساعات.</li>
+            <li>يوم <strong>الخميس</strong>: الانصراف الساعة <strong>12 ظهراً</strong> يُحتسب يوم كامل عادي، والأوفر تايم يُحسب بعد إكمال 8 ساعات.</li>
+            <li>يوم <strong>السبت</strong>: بداية الحضور الساعة <strong>12 ظهراً</strong> — أي وقت قبل الـ 12 لا يُحتسب. يوم العمل = <strong>4 ساعات</strong> (من 12 ظ حتى 4 م)، والأوفر تايم يبدأ بعد إكمال الـ 4 ساعات.</li>
+            <li>سعر <strong>الساعة العادية</strong> = الأجر اليومي ÷ 8، و<strong>الساعة الإضافية</strong> = نفس سعر الساعة العادية.</li>
+            <li>أول ساعة أوفر تايم لا تُحسب إلا بعد إكمالها كاملةً (60 دقيقة)، وبعدها يُحسب الوقت بالدقائق بشكل تناسبي.</li>
+          </ul>
+        </CardContent>
+      </Card>
+
       {/* Sessions list (wrapped in printRef for PDF export) */}
       <div ref={printRef} className="bg-background space-y-3 p-2 rounded-2xl">
         <div className="flex items-center justify-between px-2">
