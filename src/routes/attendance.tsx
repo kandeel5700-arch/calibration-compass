@@ -53,6 +53,8 @@ interface SalaryRow {
 
 function AttendancePage() {
   const { user, isAdmin } = useAuth();
+  const printRef = useRef<HTMLDivElement>(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const [weekRef, setWeekRef] = useState<Date>(new Date());
   const [rows, setRows] = useState<AttendanceRow[]>([]);
   const [profiles, setProfiles] = useState<Record<string, ProfileRow>>({});
