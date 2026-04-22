@@ -2,12 +2,55 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 /**
- * Capture an HTMLElement into a high-quality multi-page PDF that matches
- * the live design (colors, images, layout) exactly.
- *
- * The element is rendered at 2x scale for crisp output, then sliced
- * across A4 pages if it overflows.
+ * Resolve a CSS color value (potentially oklch/oklab/color()) to an rgb()
+ * string by letting the browser compute it on a probe element.
+ * html2canvas cannot parse oklch(), so we must convert before snapshotting.
  */
+function resolveColor(value: string): string {
+  if (!value) return value;
+  if (!/oklch|oklab|color\(/i.test(value)) return value;
+  const probe = document.createElement("div");
+  probe.style.color = value;
+  probe.style.display = "none";
+  document.body.appendChild(probe);
+  const resolved = getComputedStyle(probe).color;
+  document.body.removeChild(probe);
+  return resolved || "rgb(0,0,0)";
+}
+
+const COLOR_PROPS = [
+  "color",
+  "backgroundColor",
+  "borderTopColor",
+  "borderRightColor",
+  "borderBottomColor",
+  "borderLeftColor",
+  "outlineColor",
+  "fill",
+  "stroke",
+  "textDecorationColor",
+  "caretColor",
+  "columnRuleColor",
+] as const;
+
+function inlineSafeColors(root: HTMLElement) {
+  const all = [root, ...Array.from(root.querySelectorAll<HTMLElement>("*"))];
+  for (const el of all) {
+    const cs = getComputedStyle(el);
+    for (const prop of COLOR_PROPS) {
+      const v = (cs as any)[prop] as string | undefined;
+      if (v && /oklch|oklab|color\(/i.test(v)) {
+        (el.style as any)[prop] = resolveColor(v);
+      }
+    }
+    const bgImg = cs.backgroundImage;
+    if (bgImg && /oklch|oklab/i.test(bgImg)) {
+      // Gradients with oklch can't easily be resolved — drop to plain bg.
+      el.style.backgroundImage = "none";
+    }
+  }
+}
+
 export async function exportElementToPDF(
   element: HTMLElement,
   fileName: string,
@@ -26,20 +69,36 @@ export async function exportElementToPDF(
     )
   );
 
-  // Resolve actual background color from the page (so PDF matches theme)
-  const bg =
-    getComputedStyle(document.body).backgroundColor ||
-    getComputedStyle(document.documentElement).backgroundColor ||
-    "#ffffff";
+  // Clone the element off-screen so we can mutate styles without affecting UI.
+  const clone = element.cloneNode(true) as HTMLElement;
+  const wrapper = document.createElement("div");
+  wrapper.style.position = "fixed";
+  wrapper.style.left = "-100000px";
+  wrapper.style.top = "0";
+  wrapper.style.width = `${element.scrollWidth}px`;
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
 
-  const canvas = await html2canvas(element, {
-    scale: 2,
-    useCORS: true,
-    allowTaint: true,
-    backgroundColor: bg,
-    logging: false,
-    windowWidth: element.scrollWidth,
-  });
+  inlineSafeColors(clone);
+
+  const bg = resolveColor(
+    getComputedStyle(document.body).backgroundColor || "#ffffff"
+  );
+  wrapper.style.background = bg;
+
+  let canvas: HTMLCanvasElement;
+  try {
+    canvas = await html2canvas(clone, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: bg,
+      logging: false,
+      windowWidth: element.scrollWidth,
+    });
+  } finally {
+    document.body.removeChild(wrapper);
+  }
 
   const orientation = opts.orientation ?? "portrait";
   const pdf = new jsPDF({
@@ -51,7 +110,7 @@ export async function exportElementToPDF(
 
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
-  const margin = 6; // mm
+  const margin = 6;
   const usableW = pageW - margin * 2;
 
   const imgW = usableW;
@@ -62,7 +121,6 @@ export async function exportElementToPDF(
   if (imgH <= pageH - margin * 2) {
     pdf.addImage(imgData, "JPEG", margin, margin, imgW, imgH, undefined, "FAST");
   } else {
-    // Slice across pages
     const pageHeightPx = ((pageH - margin * 2) * canvas.width) / usableW;
     let renderedPx = 0;
     let pageIndex = 0;
