@@ -376,7 +376,19 @@ function AttendancePage() {
         </CardContent>
       </Card>
 
-      {/* Sessions list */}
+      {/* Sessions list (wrapped in printRef for PDF export) */}
+      <div ref={printRef} className="bg-background space-y-3 p-2 rounded-2xl">
+        <div className="flex items-center justify-between px-2">
+          <div>
+            <h2 className="font-bold text-lg">UECC — تقرير الحضور</h2>
+            <p className="text-xs text-muted-foreground">
+              {formatRange(wStart, wEnd)} · {totals.sessions} جلسة
+            </p>
+          </div>
+          <Button onClick={handleExportPdf} variant="outline" size="sm" className="gap-2 print:hidden" disabled={exportingPdf || filteredRows.length === 0}>
+            <FileText className="w-4 h-4" /> {exportingPdf ? "جارٍ..." : "تصدير PDF"}
+          </Button>
+        </div>
       <Card className="glass-card">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
