@@ -43,14 +43,35 @@ export interface ComputedDay {
 
 export function computeSession(checkIn: string, checkOut: string | null, dailyRate: number): ComputedDay {
   if (!checkOut) return { totalHours: 0, regularHours: 0, overtimeHours: 0, pay: 0 };
-  const ms = new Date(checkOut).getTime() - new Date(checkIn).getTime();
+
+  const inDate = new Date(checkIn);
+  const outDate = new Date(checkOut);
+  const day = inDate.getDay(); // Sun=0, Mon=1, ... Thu=4, Fri=5, Sat=6
+
+  // Determine the earliest billable check-in time for the day.
+  // Default: 8:00 AM (anything before 8 AM is unpaid).
+  // Saturday (day=6): start counting from 12:00 PM (noon).
+  const billableStart = new Date(inDate);
+  if (day === 6) {
+    billableStart.setHours(12, 0, 0, 0);
+  } else {
+    billableStart.setHours(8, 0, 0, 0);
+  }
+
+  const effectiveStartMs = Math.max(inDate.getTime(), billableStart.getTime());
+  const ms = outDate.getTime() - effectiveStartMs;
   const totalHours = Math.max(0, ms / 3_600_000);
-  const regularHours = Math.min(totalHours, STANDARD_HOURS);
-  // Overtime rule:
-  // - First overtime hour must complete fully (<60 min after standard day = 0 OT).
-  // - Once 1 full hour is reached, additional minutes count proportionally.
-  const rawOvertime = Math.max(0, totalHours - STANDARD_HOURS);
+
+  // Standard work hours per day:
+  // - Saturday: 4 hours (12 PM → 4 PM), overtime after 4 hours.
+  // - Other days (incl. Thursday): 8 hours, overtime after 8 hours.
+  const standardForDay = day === 6 ? 4 : STANDARD_HOURS;
+
+  const regularHours = Math.min(totalHours, standardForDay);
+  const rawOvertime = Math.max(0, totalHours - standardForDay);
+  // First overtime hour must complete fully before counting.
   const overtimeHours = rawOvertime < 1 ? 0 : rawOvertime;
+
   const hr = hourlyRate(dailyRate);
   const pay = regularHours * hr + overtimeHours * hr;
   return { totalHours, regularHours, overtimeHours, pay };
