@@ -73,7 +73,13 @@ export function computeSession(checkIn: string, checkOut: string | null, dailyRa
   const overtimeHours = rawOvertime < 1 ? 0 : rawOvertime;
 
   const hr = hourlyRate(dailyRate);
-  const pay = regularHours * hr + overtimeHours * hr;
+  // Saturday: completing the 4-hour standard day pays a FULL day's rate
+  // (not pro-rated). Overtime still calculated hourly after the 4th hour.
+  const regularPay =
+    day === 6 && regularHours >= standardForDay
+      ? dailyRate
+      : regularHours * hr;
+  const pay = regularPay + overtimeHours * hr;
   return { totalHours, regularHours, overtimeHours, pay };
 }
 
