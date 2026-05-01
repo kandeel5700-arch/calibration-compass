@@ -201,7 +201,7 @@ function AttendancePage() {
       pay = 0;
     filteredRows.forEach((r) => {
       const rate = salaries[r.user_id] ?? 0;
-      const c = computeSession(r.check_in, r.check_out, rate);
+      const c = computeSession(r.check_in, r.check_out, rate, schedule);
       regular += c.regularHours;
       overtime += c.overtimeHours;
       pay += c.pay;
