@@ -208,7 +208,7 @@ function AttendancePage() {
     });
     const totalHrs = regular + overtime;
     return { regular, overtime, pay, totalHrs, sessions: filteredRows.length };
-  }, [filteredRows, salaries]);
+  }, [filteredRows, salaries, schedule]);
 
   // Live session timer
   const liveDuration = openCheckIn
