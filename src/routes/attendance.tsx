@@ -24,6 +24,10 @@ import {
   toLocalDateTimeInput,
   weekEnd,
   weekStart,
+  DEFAULT_SCHEDULE,
+  DAY_NAMES_AR,
+  type ScheduleMap,
+  type DayRule,
 } from "@/lib/attendance";
 
 export const Route = createFileRoute("/attendance")({
