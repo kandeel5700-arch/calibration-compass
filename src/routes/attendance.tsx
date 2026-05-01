@@ -86,10 +86,11 @@ function AttendancePage() {
     if (!user) return;
     setLoading(true);
 
-    // Profiles & salaries (admin sees all; viewer only own)
-    const [{ data: profs }, { data: sals }] = await Promise.all([
+    // Profiles, salaries, work schedule
+    const [{ data: profs }, { data: sals }, { data: sched }] = await Promise.all([
       supabase.from("profiles").select("user_id, full_name, email"),
       supabase.from("user_salary").select("user_id, daily_rate"),
+      supabase.from("work_schedule").select("*"),
     ]);
     const pMap: Record<string, ProfileRow> = {};
     (profs ?? []).forEach((p: any) => (pMap[p.user_id] = p));
@@ -97,6 +98,19 @@ function AttendancePage() {
     const sMap: Record<string, number> = {};
     (sals ?? []).forEach((s: any) => (sMap[s.user_id] = Number(s.daily_rate)));
     setSalaries(sMap);
+    if (sched && sched.length) {
+      const map: ScheduleMap = { ...DEFAULT_SCHEDULE };
+      (sched as any[]).forEach((r) => {
+        map[r.day_of_week] = {
+          day_of_week: r.day_of_week,
+          start_hour: Number(r.start_hour),
+          end_hour: Number(r.end_hour),
+          standard_hours: Number(r.standard_hours),
+          is_working_day: !!r.is_working_day,
+        };
+      });
+      setSchedule(map);
+    }
 
     // Attendance for the visible week
     const targetUser = isAdmin && selectedUser !== "me" && selectedUser !== "all" ? selectedUser : null;
