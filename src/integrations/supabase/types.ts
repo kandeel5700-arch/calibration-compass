@@ -247,6 +247,36 @@ export type Database = {
         }
         Relationships: []
       }
+      work_schedule: {
+        Row: {
+          day_of_week: number
+          end_hour: number
+          is_working_day: boolean
+          standard_hours: number
+          start_hour: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          day_of_week: number
+          end_hour?: number
+          is_working_day?: boolean
+          standard_hours?: number
+          start_hour?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          day_of_week?: number
+          end_hour?: number
+          is_working_day?: boolean
+          standard_hours?: number
+          start_hour?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
