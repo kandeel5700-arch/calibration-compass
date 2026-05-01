@@ -711,3 +711,167 @@ function EditSessionDialog({
     </Dialog>
   );
 }
+
+function AdminSchedulePanel({
+  schedule,
+  onSaved,
+}: {
+  schedule: ScheduleMap;
+  onSaved: () => void;
+}) {
+  const [drafts, setDrafts] = useState<ScheduleMap>(schedule);
+  const [savingDay, setSavingDay] = useState<number | null>(null);
+
+  useEffect(() => {
+    setDrafts(schedule);
+  }, [schedule]);
+
+  function update(day: number, patch: Partial<DayRule>) {
+    setDrafts((prev) => ({
+      ...prev,
+      [day]: { ...prev[day], ...patch },
+    }));
+  }
+
+  // Convert "HH:MM" string <-> decimal hour
+  function hourToTime(h: number) {
+    const hh = Math.floor(h);
+    const mm = Math.round((h - hh) * 60);
+    return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+  }
+  function timeToHour(t: string) {
+    const [hh, mm] = t.split(":").map(Number);
+    return (hh || 0) + (mm || 0) / 60;
+  }
+
+  async function saveDay(day: number) {
+    const r = drafts[day];
+    if (!r) return;
+    if (r.end_hour <= r.start_hour) {
+      toast.error("ساعة الانصراف يجب أن تكون بعد ساعة الحضور");
+      return;
+    }
+    if (r.standard_hours < 0 || r.standard_hours > 24) {
+      toast.error("عدد الساعات الأساسية غير صالح");
+      return;
+    }
+    setSavingDay(day);
+    const { error } = await supabase
+      .from("work_schedule")
+      .upsert(
+        {
+          day_of_week: day,
+          start_hour: r.start_hour,
+          end_hour: r.end_hour,
+          standard_hours: r.standard_hours,
+          is_working_day: r.is_working_day,
+        },
+        { onConflict: "day_of_week" },
+      );
+    setSavingDay(null);
+    if (error) toast.error(error.message);
+    else {
+      toast.success(`تم حفظ ${DAY_NAMES_AR[day]} ✓`);
+      onSaved();
+    }
+  }
+
+  // Display order: start week from Saturday (6), then Sun..Fri
+  const order = [6, 0, 1, 2, 3, 4, 5];
+
+  return (
+    <Card className="glass-card border-primary/20">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Clock className="w-5 h-5 text-primary" />
+          إدارة ساعات العمل الأسبوعية (الأدمين فقط)
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-3 md:grid-cols-2">
+          {order.map((day) => {
+            const r = drafts[day] ?? DEFAULT_SCHEDULE[day];
+            const original = schedule[day] ?? DEFAULT_SCHEDULE[day];
+            const dirty =
+              r.start_hour !== original.start_hour ||
+              r.end_hour !== original.end_hour ||
+              r.standard_hours !== original.standard_hours ||
+              r.is_working_day !== original.is_working_day;
+            return (
+              <div
+                key={day}
+                className="p-3 rounded-lg border border-border bg-card/40 space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold">{DAY_NAMES_AR[day]}</span>
+                  <label className="flex items-center gap-2 text-xs cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={r.is_working_day}
+                      onChange={(e) => update(day, { is_working_day: e.target.checked })}
+                    />
+                    يوم عمل
+                  </label>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <Label className="text-[11px]">من</Label>
+                    <Input
+                      type="time"
+                      value={hourToTime(r.start_hour)}
+                      onChange={(e) => update(day, { start_hour: timeToHour(e.target.value) })}
+                      disabled={!r.is_working_day}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[11px]">إلى</Label>
+                    <Input
+                      type="time"
+                      value={hourToTime(r.end_hour)}
+                      onChange={(e) => update(day, { end_hour: timeToHour(e.target.value) })}
+                      disabled={!r.is_working_day}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[11px]">ساعات أساسية</Label>
+                    <Input
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      max="24"
+                      value={r.standard_hours}
+                      onChange={(e) =>
+                        update(day, { standard_hours: parseFloat(e.target.value) || 0 })
+                      }
+                      disabled={!r.is_working_day}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-[11px] text-muted-foreground">
+                    {r.is_working_day
+                      ? `الأوفر تايم بعد ${r.standard_hours} ساعة`
+                      : "إجازة"}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant={dirty ? "default" : "outline"}
+                    onClick={() => saveDay(day)}
+                    disabled={!dirty || savingDay === day}
+                    className="gap-1"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    {savingDay === day ? "جارٍ..." : "حفظ"}
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <p className="text-xs text-muted-foreground mt-3">
+          ملاحظة: أي وقت قبل ساعة "من" لا يُحتسب. إكمال الساعات الأساسية = يوم كامل بأجر يومي. الأوفر تايم يُحتسب بعد ذلك بسعر الساعة (الأجر اليومي ÷ الساعات الأساسية).
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
