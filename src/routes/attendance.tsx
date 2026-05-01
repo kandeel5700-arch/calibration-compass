@@ -446,7 +446,7 @@ function AttendancePage() {
             <div className="space-y-2">
               {filteredRows.map((r) => {
                 const rate = salaries[r.user_id] ?? 0;
-                const c = computeSession(r.check_in, r.check_out, rate);
+                const c = computeSession(r.check_in, r.check_out, rate, schedule);
                 const who = profiles[r.user_id];
                 return (
                   <div
