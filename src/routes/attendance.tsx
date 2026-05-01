@@ -215,7 +215,7 @@ function AttendancePage() {
     ? (now - new Date(openCheckIn.check_in).getTime()) / 3_600_000
     : 0;
   const liveComputed = openCheckIn
-    ? computeSession(openCheckIn.check_in, new Date(now).toISOString(), myDailyRate)
+    ? computeSession(openCheckIn.check_in, new Date(now).toISOString(), myDailyRate, schedule)
     : null;
 
   const myName = profiles[user?.id ?? ""]?.full_name ?? user?.email ?? "مستخدم";
