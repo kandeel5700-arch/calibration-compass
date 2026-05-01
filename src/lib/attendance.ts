@@ -5,8 +5,30 @@
 
 export const STANDARD_HOURS = 8;
 
-export function hourlyRate(dailyRate: number) {
-  return dailyRate / STANDARD_HOURS;
+export interface DayRule {
+  day_of_week: number; // 0=Sun..6=Sat
+  start_hour: number;  // billable start (e.g., 8 for 08:00)
+  end_hour: number;    // end (informational)
+  standard_hours: number; // hours considered a "full day"
+  is_working_day: boolean;
+}
+
+export type ScheduleMap = Record<number, DayRule>;
+
+export const DEFAULT_SCHEDULE: ScheduleMap = {
+  0: { day_of_week: 0, start_hour: 8,  end_hour: 16, standard_hours: 8, is_working_day: true },
+  1: { day_of_week: 1, start_hour: 8,  end_hour: 16, standard_hours: 8, is_working_day: true },
+  2: { day_of_week: 2, start_hour: 8,  end_hour: 16, standard_hours: 8, is_working_day: true },
+  3: { day_of_week: 3, start_hour: 8,  end_hour: 16, standard_hours: 8, is_working_day: true },
+  4: { day_of_week: 4, start_hour: 8,  end_hour: 16, standard_hours: 8, is_working_day: true },
+  5: { day_of_week: 5, start_hour: 8,  end_hour: 16, standard_hours: 8, is_working_day: false },
+  6: { day_of_week: 6, start_hour: 12, end_hour: 16, standard_hours: 4, is_working_day: true },
+};
+
+export const DAY_NAMES_AR = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+
+export function hourlyRate(dailyRate: number, standardHours: number = STANDARD_HOURS) {
+  return dailyRate / (standardHours || STANDARD_HOURS);
 }
 
 /** Returns the Saturday (00:00) of the week containing `date`. */
