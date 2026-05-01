@@ -5,8 +5,30 @@
 
 export const STANDARD_HOURS = 8;
 
-export function hourlyRate(dailyRate: number) {
-  return dailyRate / STANDARD_HOURS;
+export interface DayRule {
+  day_of_week: number; // 0=Sun..6=Sat
+  start_hour: number;  // billable start (e.g., 8 for 08:00)
+  end_hour: number;    // end (informational)
+  standard_hours: number; // hours considered a "full day"
+  is_working_day: boolean;
+}
+
+export type ScheduleMap = Record<number, DayRule>;
+
+export const DEFAULT_SCHEDULE: ScheduleMap = {
+  0: { day_of_week: 0, start_hour: 8,  end_hour: 16, standard_hours: 8, is_working_day: true },
+  1: { day_of_week: 1, start_hour: 8,  end_hour: 16, standard_hours: 8, is_working_day: true },
+  2: { day_of_week: 2, start_hour: 8,  end_hour: 16, standard_hours: 8, is_working_day: true },
+  3: { day_of_week: 3, start_hour: 8,  end_hour: 16, standard_hours: 8, is_working_day: true },
+  4: { day_of_week: 4, start_hour: 8,  end_hour: 16, standard_hours: 8, is_working_day: true },
+  5: { day_of_week: 5, start_hour: 8,  end_hour: 16, standard_hours: 8, is_working_day: false },
+  6: { day_of_week: 6, start_hour: 12, end_hour: 16, standard_hours: 4, is_working_day: true },
+};
+
+export const DAY_NAMES_AR = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+
+export function hourlyRate(dailyRate: number, standardHours: number = STANDARD_HOURS) {
+  return dailyRate / (standardHours || STANDARD_HOURS);
 }
 
 /** Returns the Saturday (00:00) of the week containing `date`. */
@@ -41,47 +63,48 @@ export interface ComputedDay {
   pay: number;
 }
 
-export function computeSession(checkIn: string, checkOut: string | null, dailyRate: number): ComputedDay {
+export function computeSession(
+  checkIn: string,
+  checkOut: string | null,
+  dailyRate: number,
+  schedule: ScheduleMap = DEFAULT_SCHEDULE,
+): ComputedDay {
   if (!checkOut) return { totalHours: 0, regularHours: 0, overtimeHours: 0, pay: 0 };
 
   const inDate = new Date(checkIn);
   const outDate = new Date(checkOut);
-  const day = inDate.getDay(); // Sun=0, Mon=1, ... Thu=4, Fri=5, Sat=6
+  const day = inDate.getDay();
 
-  // Determine the earliest billable check-in time for the day.
-  // Default: 8:00 AM (anything before 8 AM is unpaid).
-  // Saturday (day=6): start counting from 12:00 PM (noon).
+  const rule = schedule[day] ?? DEFAULT_SCHEDULE[day];
+  const standardForDay = Math.max(0, Number(rule.standard_hours) || 0);
+  const startHour = Number(rule.start_hour) || 0;
+
+  // Billable start = max(checkIn, day's start_hour)
   const billableStart = new Date(inDate);
-  if (day === 6) {
-    billableStart.setHours(12, 0, 0, 0);
-  } else {
-    billableStart.setHours(8, 0, 0, 0);
-  }
+  const sh = Math.floor(startHour);
+  const sm = Math.round((startHour - sh) * 60);
+  billableStart.setHours(sh, sm, 0, 0);
 
   const effectiveStartMs = Math.max(inDate.getTime(), billableStart.getTime());
   const ms = outDate.getTime() - effectiveStartMs;
   const totalHours = Math.max(0, ms / 3_600_000);
-
-  // Standard work hours per day:
-  // - Saturday: 4 hours (12 PM → 4 PM), overtime after 4 hours.
-  // - Other days (incl. Thursday): 8 hours, overtime after 8 hours.
-  const standardForDay = day === 6 ? 4 : STANDARD_HOURS;
 
   const regularHours = Math.min(totalHours, standardForDay);
   const rawOvertime = Math.max(0, totalHours - standardForDay);
   // First overtime hour must complete fully before counting.
   const overtimeHours = rawOvertime < 1 ? 0 : rawOvertime;
 
-  const hr = hourlyRate(dailyRate);
-  // Saturday: completing the 4-hour standard day pays a FULL day's rate
-  // (not pro-rated). Overtime still calculated hourly after the 4th hour.
+  const hr = hourlyRate(dailyRate, standardForDay || STANDARD_HOURS);
+  // If the user completes the day's standard hours, pay full daily rate
+  // (not pro-rated). Otherwise, pay hourly for the regular portion.
   const regularPay =
-    day === 6 && regularHours >= standardForDay
+    standardForDay > 0 && regularHours >= standardForDay
       ? dailyRate
       : regularHours * hr;
   const pay = regularPay + overtimeHours * hr;
   return { totalHours, regularHours, overtimeHours, pay };
 }
+
 
 export function formatDuration(hours: number) {
   if (!hours) return "0س 0د";
