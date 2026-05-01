@@ -63,6 +63,7 @@ function AttendancePage() {
   const [rows, setRows] = useState<AttendanceRow[]>([]);
   const [profiles, setProfiles] = useState<Record<string, ProfileRow>>({});
   const [salaries, setSalaries] = useState<Record<string, number>>({});
+  const [schedule, setSchedule] = useState<ScheduleMap>(DEFAULT_SCHEDULE);
   const [selectedUser, setSelectedUser] = useState<string>("me");
   const [loading, setLoading] = useState(true);
   const [openCheckIn, setOpenCheckIn] = useState<AttendanceRow | null>(null); // ongoing
