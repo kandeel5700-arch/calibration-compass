@@ -354,6 +354,7 @@ function AttendancePage() {
       </div>
 
       {/* Admin daily rate manager */}
+      {isAdmin && <AdminSchedulePanel schedule={schedule} onSaved={loadAll} />}
       {isAdmin && <AdminSalaryPanel profiles={profiles} salaries={salaries} onSaved={loadAll} />}
 
       {/* Filter & Search */}
