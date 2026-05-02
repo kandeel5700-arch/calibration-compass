@@ -24,10 +24,10 @@ import { NotificationBell } from "@/components/NotificationBell";
 
 const NAV = [
   { to: "/", label: "الصفحة الرئيسية", icon: Home, adminOnly: false },
+  { to: "/tasks", label: "مهام اليوم", icon: ClipboardList, adminOnly: false },
   { to: "/equipment", label: "الأجهزة", icon: Boxes, adminOnly: false },
+  { to: "/control-points", label: "النقاط المساحية", icon: MapPin, adminOnly: false },
   { to: "/attendance", label: "الحضور والانصراف", icon: Clock, adminOnly: false },
-  { to: "/leaves", label: "الإجازات", icon: Calendar, adminOnly: false },
-  { to: "/achievements", label: "إنجازاتي", icon: Award, adminOnly: false },
   { to: "/reports", label: "التقارير", icon: FileText, adminOnly: false },
   { to: "/profile", label: "الملف الشخصي", icon: UserIcon, adminOnly: false },
   { to: "/users", label: "المستخدمون", icon: Users, adminOnly: true },
