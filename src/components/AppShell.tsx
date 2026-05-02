@@ -7,11 +7,11 @@ import {
   Menu,
   X,
   Clock,
-  Calendar,
   User as UserIcon,
-  Award,
   FileText,
   HelpCircle,
+  ClipboardList,
+  MapPin,
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
