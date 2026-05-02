@@ -64,20 +64,6 @@ export function NotificationBell() {
     }
 
     if (isAdmin) {
-      // Pending leaves
-      const { count: leaveCount } = await supabase
-        .from("leave_requests")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "pending");
-      if (leaveCount && leaveCount > 0) {
-        out.push({
-          id: "lv-pending",
-          title: `${leaveCount} طلب إجازة بانتظار المراجعة`,
-          description: "اضغط لمراجعة الطلبات",
-          to: "/leaves",
-          variant: "warning",
-        });
-      }
 
       // Pending users
       const { count: userCount } = await supabase
