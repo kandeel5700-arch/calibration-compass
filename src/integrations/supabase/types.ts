@@ -82,6 +82,87 @@ export type Database = {
           },
         ]
       }
+      control_points: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          easting: number
+          elevation: number
+          id: string
+          is_primary: boolean
+          location_description: string | null
+          name: string
+          northing: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          easting: number
+          elevation: number
+          id?: string
+          is_primary?: boolean
+          location_description?: string | null
+          name: string
+          northing: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          easting?: number
+          elevation?: number
+          id?: string
+          is_primary?: boolean
+          location_description?: string | null
+          name?: string
+          northing?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      daily_tasks: {
+        Row: {
+          completed_at: string | null
+          completed_by: string | null
+          completion_notes: string | null
+          created_at: string
+          created_by: string
+          id: string
+          location_name: string
+          notes: string | null
+          task_date: string
+          task_description: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by?: string | null
+          completion_notes?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          location_name: string
+          notes?: string | null
+          task_date?: string
+          task_description: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by?: string | null
+          completion_notes?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          location_name?: string
+          notes?: string | null
+          task_date?: string
+          task_description?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       equipment: {
         Row: {
           created_at: string
