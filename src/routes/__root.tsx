@@ -66,9 +66,20 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  const [showSplash, setShowSplash] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !sessionStorage.getItem("uecc-splash-shown");
+  });
+
+  useEffect(() => {
+    if (!showSplash) return;
+    sessionStorage.setItem("uecc-splash-shown", "1");
+  }, [showSplash]);
+
   return (
     <ThemeProvider>
       <AuthProvider>
+        {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
         <Outlet />
         <Toaster richColors position="top-center" />
       </AuthProvider>
