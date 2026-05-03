@@ -541,11 +541,8 @@ function CoordRow({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex justify-between items-center">
       <span className="text-muted-foreground font-bold w-6">{label}:</span>
-      <span className="font-semibold tabular-nums">
-        {value.toLocaleString("en-US", {
-          minimumFractionDigits: 3,
-          maximumFractionDigits: 3,
-        })}
+      <span className="font-semibold tabular-nums" dir="ltr">
+        {Number.isInteger(value) ? value.toString() : value.toFixed(3)}
       </span>
     </div>
   );
