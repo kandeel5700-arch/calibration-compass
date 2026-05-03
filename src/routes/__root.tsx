@@ -1,7 +1,9 @@
 import { Outlet, createRootRoute, HeadContent, Scripts, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
+import { SplashScreen } from "@/components/SplashScreen";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
