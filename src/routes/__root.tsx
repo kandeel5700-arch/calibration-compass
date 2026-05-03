@@ -28,7 +28,11 @@ export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" },
+      { name: "theme-color", content: "#0d1f2a" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { title: "UECC Survey" },
       { name: "description", content: "UECC Survey — نظام احترافي لإدارة وجرد أجهزة المساحة وتتبع المعايرات" },
       { property: "og:title", content: "UECC Survey" },

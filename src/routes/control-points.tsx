@@ -447,33 +447,33 @@ function ControlPointsPage() {
               <div>
                 <Label>Easting</Label>
                 <Input
-                  type="number"
-                  step="0.001"
+                  type="text"
+                  inputMode="decimal"
                   value={form.easting}
                   onChange={(e) =>
-                    setForm({ ...form, easting: e.target.value })
+                    setForm({ ...form, easting: e.target.value.replace(/[^0-9.\-]/g, "") })
                   }
                 />
               </div>
               <div>
                 <Label>Northing</Label>
                 <Input
-                  type="number"
-                  step="0.001"
+                  type="text"
+                  inputMode="decimal"
                   value={form.northing}
                   onChange={(e) =>
-                    setForm({ ...form, northing: e.target.value })
+                    setForm({ ...form, northing: e.target.value.replace(/[^0-9.\-]/g, "") })
                   }
                 />
               </div>
               <div>
                 <Label>Elevation</Label>
                 <Input
-                  type="number"
-                  step="0.001"
+                  type="text"
+                  inputMode="decimal"
                   value={form.elevation}
                   onChange={(e) =>
-                    setForm({ ...form, elevation: e.target.value })
+                    setForm({ ...form, elevation: e.target.value.replace(/[^0-9.\-]/g, "") })
                   }
                 />
               </div>
@@ -541,11 +541,8 @@ function CoordRow({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex justify-between items-center">
       <span className="text-muted-foreground font-bold w-6">{label}:</span>
-      <span className="font-semibold tabular-nums">
-        {value.toLocaleString("en-US", {
-          minimumFractionDigits: 3,
-          maximumFractionDigits: 3,
-        })}
+      <span className="font-semibold tabular-nums" dir="ltr">
+        {Number.isInteger(value) ? value.toString() : value.toFixed(3)}
       </span>
     </div>
   );
