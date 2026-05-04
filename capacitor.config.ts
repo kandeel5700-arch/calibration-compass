@@ -5,8 +5,13 @@ const config: CapacitorConfig = {
   appName: 'UECC',
   webDir: 'dist',
   server: {
-    url: 'https://62a0c63c-ce00-43b7-8502-545142fa925d.lovableproject.com?forceHideBadge=true',
+    url: 'https://uecc.lovable.app',
     cleartext: true,
+    androidScheme: 'https',
+  },
+  android: {
+    allowMixedContent: true,
+    webContentsDebuggingEnabled: true,
   },
 };
 
