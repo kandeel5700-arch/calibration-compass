@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">UECC</string>
+    <string name="title_activity_main">UECC</string>
+    <string name="package_name">com.uecc.survey</string>
+    <string name="custom_url_scheme">com.uecc.survey</string>
+</resources>
