@@ -1,0 +1,9 @@
+{
+	"appId": "com.uecc.survey",
+	"appName": "UECC",
+	"webDir": "dist",
+	"android": {
+		"allowMixedContent": true,
+		"webContentsDebuggingEnabled": true
+	}
+}
