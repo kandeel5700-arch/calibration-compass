@@ -63,11 +63,62 @@ export interface ComputedDay {
   pay: number;
 }
 
+export interface AttendanceSettings {
+  overtime_first_minutes: number;
+  overtime_step_minutes: number;
+  period_start_day_1: number;
+  period_start_day_2: number;
+}
+
+export const DEFAULT_SETTINGS: AttendanceSettings = {
+  overtime_first_minutes: 60,
+  overtime_step_minutes: 30,
+  period_start_day_1: 6,
+  period_start_day_2: 21,
+};
+
+let activeSettings: AttendanceSettings = DEFAULT_SETTINGS;
+export function setActiveSettings(s: AttendanceSettings) {
+  activeSettings = s;
+}
+
+/** Rounds raw overtime: nothing until first block completes, then full steps only. */
+export function roundOvertime(rawHours: number, s: AttendanceSettings = activeSettings) {
+  const mins = Math.floor(rawHours * 60 + 1e-6);
+  const first = Math.max(0, Number(s.overtime_first_minutes) || 0);
+  const step = Math.max(1, Number(s.overtime_step_minutes) || 1);
+  if (mins < first) return 0;
+  const extra = Math.floor((mins - first) / step) * step;
+  return (first + extra) / 60;
+}
+
+/** Pay period containing `date`, based on two start days per month (e.g. 6 and 21). */
+export function payPeriod(date: Date, s: AttendanceSettings = activeSettings) {
+  const a = Math.min(s.period_start_day_1, s.period_start_day_2);
+  const b = Math.max(s.period_start_day_1, s.period_start_day_2);
+  const y = date.getFullYear();
+  const m = date.getMonth();
+  const d = date.getDate();
+  let start: Date, end: Date;
+  if (d >= a && d < b) {
+    start = new Date(y, m, a);
+    end = new Date(y, m, b - 1, 23, 59, 59, 999);
+  } else if (d >= b) {
+    start = new Date(y, m, b);
+    end = new Date(y, m + 1, a - 1, 23, 59, 59, 999);
+  } else {
+    start = new Date(y, m - 1, b);
+    end = new Date(y, m, a - 1, 23, 59, 59, 999);
+  }
+  return { start, end };
+}
+
 export function computeSession(
   checkIn: string,
   checkOut: string | null,
   dailyRate: number,
   schedule: ScheduleMap = DEFAULT_SCHEDULE,
+  settings: AttendanceSettings = activeSettings,
 ): ComputedDay {
   if (!checkOut) return { totalHours: 0, regularHours: 0, overtimeHours: 0, pay: 0 };
 
@@ -79,7 +130,6 @@ export function computeSession(
   const standardForDay = Math.max(0, Number(rule.standard_hours) || 0);
   const startHour = Number(rule.start_hour) || 0;
 
-  // Billable start = max(checkIn, day's start_hour)
   const billableStart = new Date(inDate);
   const sh = Math.floor(startHour);
   const sm = Math.round((startHour - sh) * 60);
@@ -91,18 +141,27 @@ export function computeSession(
 
   const regularHours = Math.min(totalHours, standardForDay);
   const rawOvertime = Math.max(0, totalHours - standardForDay);
-  // First overtime hour must complete fully before counting.
-  const overtimeHours = rawOvertime < 1 ? 0 : rawOvertime;
+  const overtimeHours = roundOvertime(rawOvertime, settings);
 
   const hr = hourlyRate(dailyRate, standardForDay || STANDARD_HOURS);
-  // If the user completes the day's standard hours, pay full daily rate
-  // (not pro-rated). Otherwise, pay hourly for the regular portion.
   const regularPay =
-    standardForDay > 0 && regularHours >= standardForDay
-      ? dailyRate
-      : regularHours * hr;
+    standardForDay > 0 && regularHours >= standardForDay ? dailyRate : regularHours * hr;
   const pay = regularPay + overtimeHours * hr;
   return { totalHours, regularHours, overtimeHours, pay };
+}
+
+export async function loadAttendanceSettings(client: any): Promise<AttendanceSettings> {
+  const { data } = await client.from("attendance_settings").select("*").eq("id", 1).maybeSingle();
+  const s = data
+    ? {
+        overtime_first_minutes: Number(data.overtime_first_minutes),
+        overtime_step_minutes: Number(data.overtime_step_minutes),
+        period_start_day_1: Number(data.period_start_day_1),
+        period_start_day_2: Number(data.period_start_day_2),
+      }
+    : DEFAULT_SETTINGS;
+  setActiveSettings(s);
+  return s;
 }
 
 
