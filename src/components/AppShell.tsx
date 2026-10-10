@@ -11,6 +11,7 @@ import {
   HelpCircle,
   ClipboardList,
   MapPin,
+  Settings,
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -36,6 +37,7 @@ const NAV = [
   { to: "/attendance", label: "الحضور والانصراف", icon: Clock, adminOnly: false },
   { to: "/reports", label: "التقارير", icon: FileText, adminOnly: false },
   { to: "/profile", label: "الملف الشخصي", icon: UserIcon, adminOnly: false },
+  { to: "/attendance-settings", label: "إعدادات الحضور", icon: Settings, adminOnly: true },
   { to: "/users", label: "المستخدمون", icon: Users, adminOnly: true },
   { to: "/help", label: "مركز المساعدة", icon: HelpCircle, adminOnly: false },
 ] as const;

@@ -26,7 +26,7 @@ import {
   Wallet,
   Clock,
 } from "lucide-react";
-import { computeSession, formatDuration } from "@/lib/attendance";
+import { computeSession, formatDuration, loadAttendanceSettings } from "@/lib/attendance";
 
 export const Route = createFileRoute("/reports")({
   component: () => (
@@ -70,6 +70,7 @@ function ReportsPage() {
 
   async function generate() {
     setLoading(true);
+    await loadAttendanceSettings(supabase);
     if (type === "attendance") {
       let q = supabase
         .from("attendance")
