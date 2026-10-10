@@ -44,6 +44,36 @@ export type Database = {
         }
         Relationships: []
       }
+      attendance_settings: {
+        Row: {
+          id: number
+          overtime_first_minutes: number
+          overtime_step_minutes: number
+          period_start_day_1: number
+          period_start_day_2: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: number
+          overtime_first_minutes?: number
+          overtime_step_minutes?: number
+          period_start_day_1?: number
+          period_start_day_2?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: number
+          overtime_first_minutes?: number
+          overtime_step_minutes?: number
+          period_start_day_1?: number
+          period_start_day_2?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       calibration_history: {
         Row: {
           calibration_date: string
