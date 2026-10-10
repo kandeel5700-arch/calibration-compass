@@ -362,7 +362,7 @@ function AttendancePage() {
       </div>
 
       {/* Admin daily rate manager */}
-      {isAdmin && <AdminSchedulePanel schedule={schedule} onSaved={loadAll} />}
+      {/* schedule editing moved to /attendance-settings */}
       {isAdmin && <AdminSalaryPanel profiles={profiles} salaries={salaries} onSaved={loadAll} />}
 
       {/* Filter & Search */}
@@ -719,7 +719,7 @@ function EditSessionDialog({
   );
 }
 
-function AdminSchedulePanel({
+export function AdminSchedulePanel({
   schedule,
   onSaved,
 }: {
