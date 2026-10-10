@@ -165,7 +165,7 @@ export async function loadAttendanceSettings(client: any): Promise<AttendanceSet
         overtime_step_minutes: Number(data.overtime_step_minutes),
         period_start_day_1: Number(data.period_start_day_1),
         period_start_day_2: Number(data.period_start_day_2),
-        period_mode: data.period_mode === "weekly" ? "weekly" : "semimonthly",
+        period_mode: (data.period_mode === "weekly" ? "weekly" : "semimonthly") as PeriodMode,
       }
     : DEFAULT_SETTINGS;
   setActiveSettings(s);
