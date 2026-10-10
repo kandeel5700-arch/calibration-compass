@@ -63,11 +63,14 @@ export interface ComputedDay {
   pay: number;
 }
 
+export type PeriodMode = "semimonthly" | "weekly";
+
 export interface AttendanceSettings {
   overtime_first_minutes: number;
   overtime_step_minutes: number;
   period_start_day_1: number;
   period_start_day_2: number;
+  period_mode: PeriodMode;
 }
 
 export const DEFAULT_SETTINGS: AttendanceSettings = {
@@ -75,6 +78,7 @@ export const DEFAULT_SETTINGS: AttendanceSettings = {
   overtime_step_minutes: 30,
   period_start_day_1: 6,
   period_start_day_2: 21,
+  period_mode: "semimonthly",
 };
 
 let activeSettings: AttendanceSettings = DEFAULT_SETTINGS;
@@ -92,8 +96,11 @@ export function roundOvertime(rawHours: number, s: AttendanceSettings = activeSe
   return (first + extra) / 60;
 }
 
-/** Pay period containing `date`, based on two start days per month (e.g. 6 and 21). */
+/** Pay period containing `date`: weekly (Sat–Fri) or two start days per month (e.g. 6 and 21). */
 export function payPeriod(date: Date, s: AttendanceSettings = activeSettings) {
+  if (s.period_mode === "weekly") {
+    return { start: weekStart(date), end: weekEnd(date) };
+  }
   const a = Math.min(s.period_start_day_1, s.period_start_day_2);
   const b = Math.max(s.period_start_day_1, s.period_start_day_2);
   const y = date.getFullYear();
@@ -158,6 +165,7 @@ export async function loadAttendanceSettings(client: any): Promise<AttendanceSet
         overtime_step_minutes: Number(data.overtime_step_minutes),
         period_start_day_1: Number(data.period_start_day_1),
         period_start_day_2: Number(data.period_start_day_2),
+        period_mode: data.period_mode === "weekly" ? "weekly" : "semimonthly",
       }
     : DEFAULT_SETTINGS;
   setActiveSettings(s);
