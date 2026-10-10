@@ -8,6 +8,13 @@
       "when": 1791643768847,
       "tag": "0000_attendance_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791644377579,
+      "tag": "0001_attendance_settings_period_mode",
+      "breakpoints": true
     }
   ]
 }

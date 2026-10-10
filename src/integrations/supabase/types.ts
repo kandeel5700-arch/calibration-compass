@@ -49,6 +49,7 @@ export type Database = {
           id: number
           overtime_first_minutes: number
           overtime_step_minutes: number
+          period_mode: string
           period_start_day_1: number
           period_start_day_2: number
           updated_at: string
@@ -58,6 +59,7 @@ export type Database = {
           id?: number
           overtime_first_minutes?: number
           overtime_step_minutes?: number
+          period_mode?: string
           period_start_day_1?: number
           period_start_day_2?: number
           updated_at?: string
@@ -67,6 +69,7 @@ export type Database = {
           id?: number
           overtime_first_minutes?: number
           overtime_step_minutes?: number
+          period_mode?: string
           period_start_day_1?: number
           period_start_day_2?: number
           updated_at?: string

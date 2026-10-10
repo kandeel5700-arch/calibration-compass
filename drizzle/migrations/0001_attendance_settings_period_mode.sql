@@ -1,0 +1,1 @@
+ALTER TABLE public.attendance_settings ADD COLUMN period_mode text NOT NULL DEFAULT 'semimonthly' CHECK (period_mode IN ('semimonthly', 'weekly'));

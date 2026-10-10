@@ -65,7 +65,10 @@ function SettingsPage() {
   }, []);
 
   async function save() {
-    if (s.period_start_day_1 < 1 || s.period_start_day_2 > 28 || s.period_start_day_1 >= s.period_start_day_2) {
+    if (
+      s.period_mode === "semimonthly" &&
+      (s.period_start_day_1 < 1 || s.period_start_day_2 > 28 || s.period_start_day_1 >= s.period_start_day_2)
+    ) {
       toast.error("أيام بداية الفترات يجب أن تكون بين 1 و 28 والأولى أصغر من الثانية");
       return;
     }
@@ -122,24 +125,56 @@ function SettingsPage() {
       <Card className="glass-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <CalendarRange className="w-5 h-5 text-primary" /> فترات الحساب (كل 15 يوم)
+            <CalendarRange className="w-5 h-5 text-primary" /> فترات الحساب
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <Label>بداية الفترة الأولى (يوم)</Label>
-              <Input {...num("period_start_day_1")} min={1} max={28} />
-            </div>
-            <div>
-              <Label>بداية الفترة الثانية (يوم)</Label>
-              <Input {...num("period_start_day_2")} min={1} max={28} />
-            </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setS({ ...s, period_mode: "semimonthly" })}
+              className={`rounded-xl border p-3 text-sm font-semibold transition-all ${
+                s.period_mode === "semimonthly"
+                  ? "border-primary bg-primary/10 text-primary shadow-luxe"
+                  : "border-border text-muted-foreground hover:border-primary/40"
+              }`}
+            >
+              كل 15 يوم
+            </button>
+            <button
+              type="button"
+              onClick={() => setS({ ...s, period_mode: "weekly" })}
+              className={`rounded-xl border p-3 text-sm font-semibold transition-all ${
+                s.period_mode === "weekly"
+                  ? "border-primary bg-primary/10 text-primary shadow-luxe"
+                  : "border-border text-muted-foreground hover:border-primary/40"
+              }`}
+            >
+              كل أسبوع (السبت → الجمعة)
+            </button>
           </div>
-          <p className="text-sm text-muted-foreground">
-            الفترة 1: من يوم {s.period_start_day_1} إلى يوم {s.period_start_day_2 - 1} · الفترة 2: من يوم{" "}
-            {s.period_start_day_2} إلى يوم {s.period_start_day_1 - 1} من الشهر التالي
-          </p>
+          {s.period_mode === "semimonthly" ? (
+            <>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <Label>بداية الفترة الأولى (يوم)</Label>
+                  <Input {...num("period_start_day_1")} min={1} max={28} />
+                </div>
+                <div>
+                  <Label>بداية الفترة الثانية (يوم)</Label>
+                  <Input {...num("period_start_day_2")} min={1} max={28} />
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                الفترة 1: من يوم {s.period_start_day_1} إلى يوم {s.period_start_day_2 - 1} · الفترة 2: من يوم{" "}
+                {s.period_start_day_2} إلى يوم {s.period_start_day_1 - 1} من الشهر التالي
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              الحساب أسبوعي: كل فترة تبدأ يوم السبت وتنتهي يوم الجمعة
+            </p>
+          )}
           <Button onClick={save} disabled={saving} className="gradient-primary">
             {saving ? "جارٍ الحفظ..." : "حفظ الإعدادات"}
           </Button>
