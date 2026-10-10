@@ -25,6 +25,10 @@ import {
   weekEnd,
   weekStart,
   DEFAULT_SCHEDULE,
+  DEFAULT_SETTINGS,
+  payPeriod,
+  loadAttendanceSettings,
+  type AttendanceSettings,
   DAY_NAMES_AR,
   type ScheduleMap,
   type DayRule,
@@ -72,8 +76,10 @@ function AttendancePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [dayFilter, setDayFilter] = useState<string>("");
 
-  const wStart = useMemo(() => weekStart(weekRef), [weekRef]);
-  const wEnd = useMemo(() => weekEnd(weekRef), [weekRef]);
+  const [settings, setSettings] = useState<AttendanceSettings>(DEFAULT_SETTINGS);
+  const period = useMemo(() => payPeriod(weekRef, settings), [weekRef, settings]);
+  const wStart = period.start;
+  const wEnd = period.end;
 
   const myDailyRate = salaries[user?.id ?? ""] ?? 0;
 
@@ -98,6 +104,8 @@ function AttendancePage() {
     const sMap: Record<string, number> = {};
     (sals ?? []).forEach((s: any) => (sMap[s.user_id] = Number(s.daily_rate)));
     setSalaries(sMap);
+    const st = await loadAttendanceSettings(supabase);
+    setSettings(st);
     if (sched && sched.length) {
       const map: ScheduleMap = { ...DEFAULT_SCHEDULE };
       (sched as any[]).forEach((r) => {
@@ -298,22 +306,22 @@ function AttendancePage() {
               variant="outline"
               size="icon"
               onClick={() => {
-                const d = new Date(weekRef);
-                d.setDate(d.getDate() - 7);
+                const d = new Date(wStart);
+                d.setDate(d.getDate() - 1);
                 setWeekRef(d);
               }}
             >
               <ChevronRight className="w-4 h-4" />
             </Button>
             <div className="px-4 py-2 rounded-lg bg-muted text-sm font-semibold">
-              الأسبوع: {formatRange(wStart, wEnd)}
+              الفترة: {formatRange(wStart, wEnd)}
             </div>
             <Button
               variant="outline"
               size="icon"
               onClick={() => {
-                const d = new Date(weekRef);
-                d.setDate(d.getDate() + 7);
+                const d = new Date(wEnd);
+                d.setDate(d.getDate() + 1);
                 setWeekRef(d);
               }}
             >
@@ -354,7 +362,7 @@ function AttendancePage() {
       </div>
 
       {/* Admin daily rate manager */}
-      {isAdmin && <AdminSchedulePanel schedule={schedule} onSaved={loadAll} />}
+      {/* schedule editing moved to /attendance-settings */}
       {isAdmin && <AdminSalaryPanel profiles={profiles} salaries={salaries} onSaved={loadAll} />}
 
       {/* Filter & Search */}
@@ -406,12 +414,11 @@ function AttendancePage() {
         </CardHeader>
         <CardContent>
           <ul className="space-y-2 text-sm leading-relaxed list-disc pr-5 marker:text-primary">
-            <li>بداية يوم العمل الرسمي الساعة <strong>8:00 صباحاً</strong> — أي وقت قبل الـ 8 صباحاً لا يُحتسب ولا يُدفع عنه أجر.</li>
-            <li>اليوم العادي (السبت ما عدا) = <strong>8 ساعات</strong> عمل (من 8 ص حتى 4 م)، والأوفر تايم يبدأ بعد إتمام الـ 8 ساعات.</li>
-            <li>يوم <strong>الخميس</strong>: الانصراف الساعة <strong>12 ظهراً</strong> يُحتسب يوم كامل عادي، والأوفر تايم يُحسب بعد إكمال 8 ساعات.</li>
-            <li>يوم <strong>السبت</strong>: بداية الحضور الساعة <strong>12 ظهراً</strong> — أي وقت قبل الـ 12 لا يُحتسب. يوم العمل = <strong>4 ساعات</strong> (من 12 ظ حتى 4 م)، والأوفر تايم يبدأ بعد إكمال الـ 4 ساعات.</li>
-            <li>سعر <strong>الساعة العادية</strong> = الأجر اليومي ÷ 8، و<strong>الساعة الإضافية</strong> = نفس سعر الساعة العادية.</li>
-            <li>أول ساعة أوفر تايم لا تُحسب إلا بعد إكمالها كاملةً (60 دقيقة)، وبعدها يُحسب الوقت بالدقائق بشكل تناسبي.</li>
+            <li>يوم العمل = <strong>8 ساعات</strong> (حسب ساعات كل يوم المحددة من الإدارة)، والوقت قبل بداية اليوم لا يُحتسب.</li>
+            <li>الأوفر تايم: أول <strong>{settings.overtime_first_minutes} دقيقة</strong> لا تُحسب إلا بعد إكمالها، وبعدها يُحسب كل <strong>{settings.overtime_step_minutes} دقيقة كاملة</strong> فقط.</li>
+            <li>مثال: حضور 8 ص وانصراف 5:29 م = ساعة إضافية واحدة، وانصراف 5:30 م = ساعة ونص.</li>
+            <li>سعر الساعة = الأجر اليومي ÷ ساعات اليوم، والساعة الإضافية بنفس السعر.</li>
+            <li>فترة الحساب كل 15 يوم: من يوم <strong>{settings.period_start_day_1}</strong> إلى يوم <strong>{settings.period_start_day_2 - 1}</strong>، ومن يوم <strong>{settings.period_start_day_2}</strong> إلى يوم <strong>{settings.period_start_day_1 - 1}</strong> من الشهر التالي.</li>
           </ul>
         </CardContent>
       </Card>
@@ -712,7 +719,7 @@ function EditSessionDialog({
   );
 }
 
-function AdminSchedulePanel({
+export function AdminSchedulePanel({
   schedule,
   onSaved,
 }: {
