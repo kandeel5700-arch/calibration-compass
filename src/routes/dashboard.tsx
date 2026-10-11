@@ -21,7 +21,7 @@ import { getStatus, STATUS_LABELS, STATUS_COLORS, daysUntil, type Equipment, typ
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/dashboard")({
   component: () => (
     <Protected>
       <Dashboard />

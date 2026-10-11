@@ -61,7 +61,7 @@ interface SalaryRow {
   daily_rate: number;
 }
 
-function AttendancePage() {
+export function AttendancePage() {
   const { user, isAdmin } = useAuth();
   const printRef = useRef<HTMLDivElement>(null);
   const [exportingPdf, setExportingPdf] = useState(false);
