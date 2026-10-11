@@ -19,10 +19,10 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as HelpRouteImport } from './routes/help'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as EquipmentRouteImport } from './routes/equipment'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ControlPointsRouteImport } from './routes/control-points'
 import { Route as AttendanceSettingsRouteImport } from './routes/attendance-settings'
 import { Route as AttendanceRouteImport } from './routes/attendance'
-import { Route as IndexRouteImport } from './routes/index'
 
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
@@ -74,6 +74,11 @@ const EquipmentRoute = EquipmentRouteImport.update({
   path: '/equipment',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ControlPointsRoute = ControlPointsRouteImport.update({
   id: '/control-points',
   path: '/control-points',
@@ -89,17 +94,12 @@ const AttendanceRoute = AttendanceRouteImport.update({
   path: '/attendance',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
   '/attendance-settings': typeof AttendanceSettingsRoute
   '/control-points': typeof ControlPointsRoute
+  '/dashboard': typeof DashboardRoute
   '/equipment': typeof EquipmentRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/help': typeof HelpRoute
@@ -112,10 +112,10 @@ export interface FileRoutesByFullPath {
   '/users': typeof UsersRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
   '/attendance-settings': typeof AttendanceSettingsRoute
   '/control-points': typeof ControlPointsRoute
+  '/dashboard': typeof DashboardRoute
   '/equipment': typeof EquipmentRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/help': typeof HelpRoute
@@ -129,10 +129,10 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
   '/attendance-settings': typeof AttendanceSettingsRoute
   '/control-points': typeof ControlPointsRoute
+  '/dashboard': typeof DashboardRoute
   '/equipment': typeof EquipmentRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/help': typeof HelpRoute
@@ -147,10 +147,10 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
     | '/attendance'
     | '/attendance-settings'
     | '/control-points'
+    | '/dashboard'
     | '/equipment'
     | '/forgot-password'
     | '/help'
@@ -163,10 +163,10 @@ export interface FileRouteTypes {
     | '/users'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
     | '/attendance'
     | '/attendance-settings'
     | '/control-points'
+    | '/dashboard'
     | '/equipment'
     | '/forgot-password'
     | '/help'
@@ -179,10 +179,10 @@ export interface FileRouteTypes {
     | '/users'
   id:
     | '__root__'
-    | '/'
     | '/attendance'
     | '/attendance-settings'
     | '/control-points'
+    | '/dashboard'
     | '/equipment'
     | '/forgot-password'
     | '/help'
@@ -196,10 +196,10 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
   AttendanceRoute: typeof AttendanceRoute
   AttendanceSettingsRoute: typeof AttendanceSettingsRoute
   ControlPointsRoute: typeof ControlPointsRoute
+  DashboardRoute: typeof DashboardRoute
   EquipmentRoute: typeof EquipmentRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   HelpRoute: typeof HelpRoute
@@ -284,6 +284,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EquipmentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/control-points': {
       id: '/control-points'
       path: '/control-points'
@@ -305,21 +312,14 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AttendanceRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
   AttendanceRoute: AttendanceRoute,
   AttendanceSettingsRoute: AttendanceSettingsRoute,
   ControlPointsRoute: ControlPointsRoute,
+  DashboardRoute: DashboardRoute,
   EquipmentRoute: EquipmentRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   HelpRoute: HelpRoute,
