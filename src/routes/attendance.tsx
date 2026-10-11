@@ -61,7 +61,7 @@ interface SalaryRow {
   daily_rate: number;
 }
 
-function AttendancePage() {
+export function AttendancePage() {
   const { user, isAdmin } = useAuth();
   const printRef = useRef<HTMLDivElement>(null);
   const [exportingPdf, setExportingPdf] = useState(false);
@@ -74,6 +74,7 @@ function AttendancePage() {
   const [loading, setLoading] = useState(true);
   const [openCheckIn, setOpenCheckIn] = useState<AttendanceRow | null>(null); // ongoing
   const [editing, setEditing] = useState<AttendanceRow | null>(null);
+  const [adding, setAdding] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [searchQuery, setSearchQuery] = useState("");
   const [dayFilter, setDayFilter] = useState<string>("");
@@ -471,7 +472,36 @@ function AttendancePage() {
 
       {/* Admin daily rate manager */}
       {/* schedule editing moved to /attendance-settings */}
+      {isAdmin && (
+        <Card className="glass-card border-primary/30 overflow-hidden">
+          <CardContent className="p-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl gradient-primary text-primary-foreground flex items-center justify-center shadow-luxe">
+                <Pencil className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="font-bold">تسجيل / تعديل حضور يدوي</p>
+                <p className="text-xs text-muted-foreground">أضف حضور وانصراف أي موظف في أي يوم، أو اضغط القلم على أي جلسة لتعديلها</p>
+              </div>
+            </div>
+            <Button onClick={() => setAdding(true)} className="gap-2 gradient-primary text-primary-foreground">
+              <CalendarDays className="w-4 h-4" /> إضافة حضور ليوم
+            </Button>
+          </CardContent>
+        </Card>
+      )}
       {isAdmin && <AdminSalaryPanel profiles={profiles} salaries={salaries} onSaved={loadAll} />}
+      {adding && (
+        <AddSessionDialog
+          profiles={profiles}
+          defaultUser={selectedUser !== "me" && selectedUser !== "all" ? selectedUser : user?.id ?? ""}
+          onClose={() => setAdding(false)}
+          onSaved={() => {
+            setAdding(false);
+            loadAll();
+          }}
+        />
+      )}
 
       {/* Filter & Search */}
       <Card className="glass-card">
