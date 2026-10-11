@@ -168,7 +168,7 @@ function AttendancePage() {
     if (error) { setActionError(true); toast.error(error.message); }
     else {
       toast.success("تم تسجيل الحضور ✓", { description: new Date().toLocaleTimeString("ar-EG") });
-      loadAll();
+      await loadAll();
     }
   }
 
@@ -181,7 +181,7 @@ function AttendancePage() {
     if (error) { setActionError(true); toast.error(error.message); }
     else {
       toast.success("تم تسجيل الانصراف ✓", { description: new Date().toLocaleTimeString("ar-EG") });
-      loadAll();
+      await loadAll();
     }
   }
 
