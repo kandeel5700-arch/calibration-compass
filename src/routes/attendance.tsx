@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { LogIn, LogOut as LogOutIcon, Pencil, Save, ChevronRight, ChevronLeft, Clock, Wallet, Timer, Sparkles, Search, CalendarDays, TrendingUp, FileText } from "lucide-react";
+import { LogIn, LogOut as LogOutIcon, Pencil, Save, ChevronRight, ChevronLeft, Clock, Wallet, Timer, Sparkles, Search, CalendarDays, TrendingUp, FileText, Fingerprint, Loader2, CheckCircle2, AlertCircle, UserRound } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   STANDARD_HOURS,
   computeSession,
@@ -53,6 +54,7 @@ interface ProfileRow {
   user_id: string;
   full_name: string | null;
   email: string | null;
+  avatar_url?: string | null;
 }
 interface SalaryRow {
   user_id: string;
@@ -94,7 +96,7 @@ function AttendancePage() {
 
     // Profiles, salaries, work schedule
     const [{ data: profs }, { data: sals }, { data: sched }] = await Promise.all([
-      supabase.from("profiles").select("user_id, full_name, email"),
+      supabase.from("profiles").select("user_id, full_name, email, avatar_url"),
       supabase.from("user_salary").select("user_id, daily_rate"),
       supabase.from("work_schedule").select("*"),
     ]);
@@ -163,9 +165,9 @@ function AttendancePage() {
     const { error } = await supabase
       .from("attendance")
       .insert({ user_id: user.id, check_in: new Date().toISOString() });
-    if (error) toast.error(error.message);
+    if (error) { setActionError(true); toast.error(error.message); }
     else {
-      toast.success("تم تسجيل الحضور ✓");
+      toast.success("تم تسجيل الحضور ✓", { description: new Date().toLocaleTimeString("ar-EG") });
       loadAll();
     }
   }
@@ -176,9 +178,9 @@ function AttendancePage() {
       .from("attendance")
       .update({ check_out: new Date().toISOString() })
       .eq("id", openCheckIn.id);
-    if (error) toast.error(error.message);
+    if (error) { setActionError(true); toast.error(error.message); }
     else {
-      toast.success("تم تسجيل الانصراف ✓");
+      toast.success("تم تسجيل الانصراف ✓", { description: new Date().toLocaleTimeString("ar-EG") });
       loadAll();
     }
   }
@@ -245,120 +247,226 @@ function AttendancePage() {
     }
   }
 
-  return (
-    <div className="space-y-6 max-w-7xl mx-auto" dir="rtl">
-      {/* Hero - my info */}
-      <Card className="glass-card overflow-hidden border-primary/20">
-        <CardContent className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center shadow-luxe">
-              <Sparkles className="w-7 h-7 text-primary-foreground" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">مرحباً</p>
-              <h2 className="text-2xl font-bold">{myName}</h2>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge variant="secondary" className="gap-1">
-                  <Wallet className="w-3 h-3" />
-                  الأجر اليومي: {myDailyRate.toFixed(2)} ج
-                </Badge>
-                <Badge variant="outline" className="gap-1">
-                  <Clock className="w-3 h-3" />
-                  ساعة إضافية: {hourlyRate(myDailyRate).toFixed(2)} ج
-                </Badge>
-              </div>
-            </div>
-          </div>
+  const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState(false);
+  const hour = new Date(now).getHours();
+  const greeting = hour < 12 ? "صباح الخير" : "مساء الخير";
+  const nowDate = new Date(now);
+  const arDate = nowDate.toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const arTime = nowDate.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true });
+  const money = (n: number) => `${n.toLocaleString("ar-EG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
+  const myAvatar = profiles[user?.id ?? ""]?.avatar_url ?? null;
 
-          <div className="flex flex-col items-end gap-2">
-            {openCheckIn ? (
-              <>
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground">جلسة نشطة منذ</p>
-                  <p className="font-mono font-bold text-lg text-gradient-primary">
-                    {formatTime(openCheckIn.check_in)}
-                  </p>
-                  <p className="text-sm font-semibold">
-                    {formatDuration(liveDuration)} ·{" "}
-                    <span className="text-primary">{liveComputed?.pay.toFixed(2)} ج</span>
-                  </p>
-                </div>
-                <Button onClick={handleCheckOut} variant="destructive" className="gap-2">
-                  <LogOutIcon className="w-4 h-4" />
-                  تسجيل الانصراف
-                </Button>
-              </>
+  // Today's completed session for current user (from real rows)
+  const todayKey = new Date(now).toDateString();
+  const todayDone = rows.find(
+    (r) => r.user_id === user?.id && r.check_out && new Date(r.check_in).toDateString() === todayKey,
+  );
+  const statusState: "pending" | "in" | "done" | "error" = actionError
+    ? "error"
+    : openCheckIn
+      ? "in"
+      : todayDone
+        ? "done"
+        : "pending";
+
+  async function onPress() {
+    if (busy) return;
+    setBusy(true);
+    setActionError(false);
+    try {
+      if (openCheckIn) await handleCheckOut();
+      else await handleCheckIn();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Day strip for period (only when viewing one person)
+  const viewingUserId = !isAdmin || selectedUser === "me" ? user?.id : selectedUser;
+  const days = useMemo(() => {
+    const out: { date: Date; status: "present" | "absent" | "rest" | "none" }[] = [];
+    const d = new Date(wStart);
+    d.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    while (d <= wEnd) {
+      const has = rows.some((r) => r.user_id === viewingUserId && new Date(r.check_in).toDateString() === d.toDateString());
+      const rule = schedule[d.getDay()];
+      let status: "present" | "absent" | "rest" | "none" = "none";
+      if (has) status = "present";
+      else if (rule && !rule.is_working_day) status = "rest";
+      else if (d < today) status = "absent";
+      out.push({ date: new Date(d), status });
+      d.setDate(d.getDate() + 1);
+    }
+    return out;
+  }, [rows, wStart, wEnd, schedule, viewingUserId]);
+
+  const DAY_STYLE = {
+    present: { label: "حاضر", cls: "bg-success/15 text-success border-success/30" },
+    absent: { label: "غائب", cls: "bg-destructive/10 text-destructive border-destructive/30" },
+    rest: { label: "راحة", cls: "bg-muted text-muted-foreground border-border" },
+    none: { label: "لم يُسجل", cls: "bg-card text-muted-foreground border-dashed border-border" },
+  } as const;
+
+  return (
+    <div className="space-y-4 md:space-y-5 max-w-5xl mx-auto" dir="rtl">
+      {/* Welcome card */}
+      <section className="rounded-3xl border border-border bg-card shadow-card p-4 md:p-6 animate-fade-up">
+        <div className="flex items-center gap-3 md:gap-4">
+          <div className="w-14 h-14 md:w-16 md:h-16 shrink-0 rounded-2xl overflow-hidden bg-primary/10 text-primary flex items-center justify-center ring-2 ring-primary/20">
+            {myAvatar ? (
+              <img src={myAvatar} alt={myName} className="w-full h-full object-cover" />
             ) : (
-              <Button onClick={handleCheckIn} className="gap-2 gradient-primary shadow-luxe">
-                <LogIn className="w-4 h-4" />
-                تسجيل الحضور الآن
-              </Button>
+              <UserRound className="w-7 h-7" />
             )}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Week navigation + admin filter */}
-      <Card className="glass-card">
-        <CardContent className="p-4 flex flex-wrap items-center gap-3 justify-between">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => {
-                const d = new Date(wStart);
-                d.setDate(d.getDate() - 1);
-                setWeekRef(d);
-              }}
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-            <div className="px-4 py-2 rounded-lg bg-muted text-sm font-semibold">
-              الفترة: {formatRange(wStart, wEnd)}
-            </div>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => {
-                const d = new Date(wEnd);
-                d.setDate(d.getDate() + 1);
-                setWeekRef(d);
-              }}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => setWeekRef(new Date())}>
-              هذا الأسبوع
-            </Button>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm text-primary font-semibold flex items-center gap-1">
+              <Sparkles className="w-4 h-4 shrink-0" /> {greeting}
+            </p>
+            <h2 className="text-xl md:text-2xl font-bold truncate">{myName}</h2>
+            <p className="text-xs text-muted-foreground truncate">{arDate}</p>
           </div>
+          <div className="hidden sm:block text-left shrink-0">
+            <p className="font-mono text-2xl font-bold text-primary tabular-nums">{arTime}</p>
+          </div>
+        </div>
+        <p className="sm:hidden mt-3 font-mono text-xl font-bold text-primary tabular-nums text-center rounded-xl bg-primary/5 py-2">{arTime}</p>
+        <div className="grid grid-cols-2 gap-2 mt-4">
+          <div className="rounded-2xl bg-primary/10 px-3 py-2 min-w-0">
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1"><Wallet className="w-3.5 h-3.5 shrink-0" /> الأجر اليومي</p>
+            <p className="font-bold text-sm md:text-base truncate">{money(myDailyRate)}</p>
+          </div>
+          <div className="rounded-2xl bg-warning/10 px-3 py-2 min-w-0">
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1"><Timer className="w-3.5 h-3.5 shrink-0" /> سعر الساعة الإضافية</p>
+            <p className="font-bold text-sm md:text-base truncate">{money(hourlyRate(myDailyRate))}</p>
+          </div>
+        </div>
+      </section>
 
-          {isAdmin && (
-            <div className="flex items-center gap-2">
-              <Label className="text-xs">عرض المستخدم:</Label>
-              <Select value={selectedUser} onValueChange={setSelectedUser}>
-                <SelectTrigger className="w-56">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="me">أنا</SelectItem>
-                  {Object.values(profiles).map((p) => (
-                    <SelectItem key={p.user_id} value={p.user_id}>
-                      {p.full_name || p.email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      {/* Main attendance action */}
+      <section className="space-y-3">
+        <button
+          type="button"
+          onClick={onPress}
+          disabled={busy || loading}
+          aria-busy={busy}
+          className={cn(
+            "w-full min-h-[88px] rounded-3xl px-5 py-4 flex items-center gap-4 text-right shadow-luxe transition-all duration-200 active:scale-[0.98] hover:brightness-105 disabled:opacity-60 disabled:cursor-not-allowed touch-manipulation",
+            openCheckIn ? "bg-warning text-warning-foreground" : "bg-primary text-primary-foreground",
           )}
-        </CardContent>
-      </Card>
+        >
+          <span className="w-14 h-14 shrink-0 rounded-2xl bg-background/20 flex items-center justify-center">
+            {busy ? (
+              <Loader2 className="w-7 h-7 animate-spin" />
+            ) : openCheckIn ? (
+              <LogOutIcon className="w-7 h-7" />
+            ) : (
+              <Fingerprint className="w-8 h-8" />
+            )}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-xl font-bold">{openCheckIn ? "تسجيل الانصراف" : "تسجيل الحضور"}</span>
+            <span className="block text-sm opacity-90 truncate">
+              {openCheckIn
+                ? `حضرت الساعة ${formatTime(openCheckIn.check_in)} · لا تنسَ تسجيل انصرافك`
+                : "ابدأ يوم عملك"}
+            </span>
+          </span>
+        </button>
 
-      {/* Totals */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatTile icon={Clock} label="ساعات عادية" value={formatDuration(totals.regular)} />
-        <StatTile icon={Timer} label="ساعات إضافية" value={formatDuration(totals.overtime)} accent />
-        <StatTile icon={TrendingUp} label="إجمالي الساعات" value={formatDuration(totals.totalHrs)} />
-        <StatTile icon={Wallet} label="إجمالي المستحق" value={`${totals.pay.toFixed(2)} ج`} />
+        {/* Status panel */}
+        <div
+          className={cn(
+            "rounded-2xl border px-4 py-3 flex items-center gap-3",
+            statusState === "pending" && "bg-muted/50 border-border text-muted-foreground",
+            statusState === "in" && "bg-success/10 border-success/30 text-success",
+            statusState === "done" && "bg-primary/10 border-primary/30 text-primary",
+            statusState === "error" && "bg-destructive/10 border-destructive/30 text-destructive",
+          )}
+          role="status"
+        >
+          {statusState === "error" ? <AlertCircle className="w-5 h-5 shrink-0" /> : statusState === "pending" ? <Clock className="w-5 h-5 shrink-0" /> : <CheckCircle2 className="w-5 h-5 shrink-0" />}
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-sm">
+              {statusState === "pending" && "لم يتم تسجيل الحضور"}
+              {statusState === "in" && "تم تسجيل الحضور"}
+              {statusState === "done" && "تم تسجيل الانصراف"}
+              {statusState === "error" && "يوجد خطأ في تسجيل البصمة"}
+            </p>
+            {statusState === "in" && openCheckIn && (
+              <p className="text-xs text-foreground/80">
+                الحضور {formatTime(openCheckIn.check_in)} · المدة {formatDuration(liveDuration)} · {money(liveComputed?.pay ?? 0)}
+              </p>
+            )}
+            {statusState === "done" && todayDone && (
+              <p className="text-xs text-foreground/80">
+                الحضور {formatTime(todayDone.check_in)} · الانصراف {formatTime(todayDone.check_out!)}
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Period summary */}
+      <section className="rounded-3xl border border-border bg-card shadow-card p-4 md:p-5 space-y-4">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+          <h3 className="font-bold flex items-center gap-2 min-w-0"><CalendarDays className="w-5 h-5 text-primary shrink-0" /><span className="truncate">ملخص الحضور</span></h3>
+          <Button variant="ghost" size="sm" onClick={() => setWeekRef(new Date())}>الفترة الحالية</Button>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" className="h-12 w-12 shrink-0 rounded-xl" aria-label="الفترة السابقة"
+            onClick={() => { const d = new Date(wStart); d.setDate(d.getDate() - 1); setWeekRef(d); }}>
+            <ChevronRight className="w-5 h-5" />
+          </Button>
+          <div className="flex-1 min-w-0 h-12 rounded-xl bg-muted flex items-center justify-center text-sm font-semibold px-2 text-center">
+            <span className="truncate">{formatRange(wStart, wEnd)}</span>
+          </div>
+          <Button variant="outline" size="icon" className="h-12 w-12 shrink-0 rounded-xl" aria-label="الفترة التالية"
+            onClick={() => { const d = new Date(wEnd); d.setDate(d.getDate() + 1); setWeekRef(d); }}>
+            <ChevronLeft className="w-5 h-5" />
+          </Button>
+        </div>
+        {isAdmin && (
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">عرض الموظف</Label>
+            <Select value={selectedUser} onValueChange={setSelectedUser}>
+              <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="me">أنا</SelectItem>
+                {Object.values(profiles).map((p) => (
+                  <SelectItem key={p.user_id} value={p.user_id}>{p.full_name || p.email}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        {loading ? (
+          <div className="grid grid-cols-7 gap-1.5">{Array.from({ length: 7 }).map((_, i) => <div key={i} className="h-14 rounded-xl bg-muted animate-pulse" />)}</div>
+        ) : (
+          <div className="grid grid-cols-5 sm:grid-cols-8 gap-1.5">
+            {days.map((d) => {
+              const s = DAY_STYLE[d.status];
+              return (
+                <div key={d.date.toISOString()} className={cn("rounded-xl border px-1 py-1.5 text-center min-w-0", s.cls)} title={s.label}>
+                  <p className="text-[10px] truncate">{DAY_NAMES_AR[d.date.getDay()]}</p>
+                  <p className="font-bold text-sm">{d.date.getDate().toLocaleString("ar-EG")}</p>
+                  <p className="text-[9px] truncate">{s.label}</p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatTile loading={loading} icon={Clock} label="الساعات العادية" value={formatDuration(totals.regular)} tone="primary" />
+        <StatTile loading={loading} icon={Timer} label="الساعات الإضافية" value={formatDuration(totals.overtime)} tone="warning" />
+        <StatTile loading={loading} icon={TrendingUp} label="إجمالي الساعات" value={formatDuration(totals.totalHrs)} tone="success" />
+        <StatTile loading={loading} icon={Wallet} label="إجمالي المستحقات" value={money(totals.pay)} tone="accent" />
       </div>
 
       {/* Admin daily rate manager */}
@@ -526,29 +634,35 @@ function StatTile({
   icon: Icon,
   label,
   value,
-  accent,
+  tone = "primary",
+  loading,
 }: {
   icon: any;
   label: string;
   value: string;
-  accent?: boolean;
+  tone?: "primary" | "warning" | "success" | "accent";
+  loading?: boolean;
 }) {
+  const toneCls = {
+    primary: "bg-primary/15 text-primary",
+    warning: "bg-warning/15 text-warning",
+    success: "bg-success/15 text-success",
+    accent: "bg-accent text-accent-foreground",
+  }[tone];
   return (
-    <Card className={accent ? "glass-card border-warning/30" : "glass-card"}>
-      <CardContent className="p-4 flex items-center gap-3">
-        <div
-          className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-            accent ? "bg-warning/20 text-warning" : "bg-primary/15 text-primary"
-          }`}
-        >
-          <Icon className="w-5 h-5" />
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="font-bold text-lg">{value}</p>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="rounded-2xl border border-border bg-card shadow-card p-3 md:p-4 min-h-[96px] flex flex-col justify-between gap-2 transition-transform hover:-translate-y-0.5 min-w-0">
+      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${toneCls}`}>
+        <Icon className="w-5 h-5" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[11px] md:text-xs text-muted-foreground truncate">{label}</p>
+        {loading ? (
+          <div className="h-6 mt-1 w-3/4 rounded bg-muted animate-pulse" />
+        ) : (
+          <p className="font-bold text-base md:text-xl truncate tabular-nums">{value}</p>
+        )}
+      </div>
+    </div>
   );
 }
 
