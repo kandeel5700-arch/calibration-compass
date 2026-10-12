@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { exportElementToPDF } from "@/lib/pdfExport";
 import { Protected } from "@/components/Protected";
@@ -10,9 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { LogIn, LogOut as LogOutIcon, Pencil, Save, ChevronRight, ChevronLeft, Clock, Wallet, Timer, Sparkles, Search, CalendarDays, TrendingUp, FileText, Fingerprint, Loader2, CheckCircle2, AlertCircle, UserRound } from "lucide-react";
+import { LogIn, LogOut as LogOutIcon, Pencil, Save, ChevronRight, ChevronLeft, Clock, Wallet, Timer, Sparkles, Search, CalendarDays, TrendingUp, FileText, Fingerprint, Loader2, CheckCircle2, AlertCircle, UserRound, Plus, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   STANDARD_HOURS,
@@ -36,6 +36,14 @@ import {
 } from "@/lib/attendance";
 
 export const Route = createFileRoute("/attendance")({
+  head: () => ({ meta: [
+    { title: "سجل الحضور والانصراف — UECC Survey" },
+    { name: "description", content: "تابع أيام العمل ومواعيد الحضور والانصراف والمستحقات في UECC Survey." },
+    { property: "og:title", content: "سجل الحضور والانصراف — UECC Survey" },
+    { property: "og:description", content: "تفاصيل أيام الموظفين وساعات العمل والحضور والانصراف." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: () => (
     <Protected>
       <AttendancePage />
@@ -75,6 +83,10 @@ export function AttendancePage() {
   const [openCheckIn, setOpenCheckIn] = useState<AttendanceRow | null>(null); // ongoing
   const [editing, setEditing] = useState<AttendanceRow | null>(null);
   const [adding, setAdding] = useState(false);
+  const [detailDay, setDetailDay] = useState<Date | null>(null);
+  const [detailUser, setDetailUser] = useState<string | null>(null);
+  const [addDay, setAddDay] = useState<string | undefined>();
+  const [addUser, setAddUser] = useState<string | undefined>();
   const [now, setNow] = useState(Date.now());
   const [searchQuery, setSearchQuery] = useState("");
   const [dayFilter, setDayFilter] = useState<string>("");
@@ -311,11 +323,31 @@ export function AttendancePage() {
     none: { label: "لم يُسجل", cls: "bg-card text-muted-foreground border-dashed border-border" },
   } as const;
 
+  function openDay(date: Date, userId = viewingUserId) {
+    if (!userId || userId === "all") return;
+    setDetailUser(userId);
+    setDetailDay(date);
+  }
+
+  const detailRows = detailDay ? rows.filter((r) => r.user_id === detailUser && new Date(r.check_in).toDateString() === detailDay.toDateString()).sort((a, b) => a.check_in.localeCompare(b.check_in)) : [];
+  const detailRule = detailDay ? schedule[detailDay.getDay()] : undefined;
+  const detailTotals = detailRows.reduce((sum, row) => {
+    const c = computeSession(row.check_in, row.check_out, salaries[row.user_id] ?? 0, schedule, settings);
+    return { hours: sum.hours + c.totalHours, overtime: sum.overtime + c.overtimeHours, pay: sum.pay + c.pay };
+  }, { hours: 0, overtime: 0, pay: 0 });
+
   return (
     <div className="space-y-4 md:space-y-5 max-w-5xl mx-auto" dir="rtl">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+        <div>
+          <p className="text-xs font-semibold text-primary mb-1">UECC Survey</p>
+          <h1 className="text-2xl font-bold">الحضور والانصراف</h1>
+        </div>
+        <Badge variant="outline" className="gap-2 py-2"><span className={cn("size-2 rounded-full", openCheckIn ? "bg-success" : "bg-muted-foreground")} />{openCheckIn ? "يوم العمل جارٍ" : "سجل أيام العمل"}</Badge>
+      </header>
+      <div className="grid gap-4 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] items-stretch">
       {/* Welcome card */}
-      <section className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/15 via-card to-card shadow-luxe p-4 md:p-6 animate-fade-up">
-        <div aria-hidden className="pointer-events-none absolute -top-16 -left-16 w-48 h-48 rounded-full bg-primary/20 blur-3xl" />
+      <section className="border-s-2 border-primary bg-card/40 p-4 md:p-6 animate-fade-up min-w-0">
         <div className="flex items-center gap-3 md:gap-4">
           <div className="w-14 h-14 md:w-16 md:h-16 shrink-0 rounded-2xl overflow-hidden bg-primary/10 text-primary flex items-center justify-center ring-2 ring-primary/20">
             {myAvatar ? (
@@ -331,17 +363,14 @@ export function AttendancePage() {
             <h2 className="text-xl md:text-2xl font-bold truncate">{myName}</h2>
             <p className="text-xs text-muted-foreground truncate">{arDate}</p>
           </div>
-          <div className="hidden sm:block text-left shrink-0">
-            <p className="font-mono text-2xl font-bold text-primary tabular-nums">{arTime}</p>
-          </div>
         </div>
-        <p className="sm:hidden mt-3 font-mono text-xl font-bold text-primary tabular-nums text-center rounded-xl bg-primary/5 py-2">{arTime}</p>
+        <p className="mt-4 text-2xl font-bold text-primary tabular-nums" suppressHydrationWarning>{arTime}</p>
         <div className="grid grid-cols-2 gap-2 mt-4">
-          <div className="rounded-2xl bg-primary/10 px-3 py-2 min-w-0">
+          <div className="border-t border-border pt-3 min-w-0">
             <p className="text-[11px] text-muted-foreground flex items-center gap-1"><Wallet className="w-3.5 h-3.5 shrink-0" /> الأجر اليومي</p>
             <p className="font-bold text-sm md:text-base truncate">{money(myDailyRate)}</p>
           </div>
-          <div className="rounded-2xl bg-warning/10 px-3 py-2 min-w-0">
+          <div className="border-t border-border pt-3 min-w-0">
             <p className="text-[11px] text-muted-foreground flex items-center gap-1"><Timer className="w-3.5 h-3.5 shrink-0" /> سعر الساعة الإضافية</p>
             <p className="font-bold text-sm md:text-base truncate">{money(hourlyRate(myDailyRate))}</p>
           </div>
@@ -349,14 +378,15 @@ export function AttendancePage() {
       </section>
 
       {/* Main attendance action */}
-      <section className="space-y-3">
-        <button
+      <section className="space-y-3 flex flex-col justify-center min-w-0">
+        <Button
+          variant="default"
           type="button"
           onClick={onPress}
           disabled={busy || loading}
           aria-busy={busy}
           className={cn(
-            "w-full min-h-[88px] rounded-3xl px-5 py-4 flex items-center gap-4 text-right shadow-luxe transition-all duration-200 active:scale-[0.98] hover:brightness-105 disabled:opacity-60 disabled:cursor-not-allowed touch-manipulation",
+            "w-full h-auto min-h-[112px] rounded-lg px-5 py-5 flex items-center gap-4 text-right whitespace-normal shadow-card transition-all duration-200 active:scale-[0.98] hover:brightness-105 disabled:opacity-60 disabled:cursor-not-allowed touch-manipulation [&_svg]:size-7",
             openCheckIn ? "bg-warning text-warning-foreground" : "bg-primary text-primary-foreground",
           )}
         >
@@ -385,7 +415,7 @@ export function AttendancePage() {
               </span>
             )}
           </span>
-        </button>
+        </Button>
 
         {/* Status panel */}
         <div
@@ -413,15 +443,16 @@ export function AttendancePage() {
             )}
             {statusState === "done" && todayDone && (
               <p className="text-xs text-foreground/80">
-                الحضور {formatTime(todayDone.check_in)} · الانصراف {formatTime(todayDone.check_out!)}
+                الحضور {formatTime(todayDone.check_in)} · الانصراف {todayDone.check_out ? formatTime(todayDone.check_out) : "—"}
               </p>
             )}
           </div>
         </div>
       </section>
+      </div>
 
       {/* Period summary */}
-      <section className="rounded-3xl border border-border bg-card shadow-card p-4 md:p-5 space-y-4">
+      <section className="border-y border-border py-5 space-y-4">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
           <h3 className="font-bold flex items-center gap-2 min-w-0"><CalendarDays className="w-5 h-5 text-primary shrink-0" /><span className="truncate">ملخص الحضور</span></h3>
           <Button variant="ghost" size="sm" onClick={() => setWeekRef(new Date())}>الفترة الحالية</Button>
@@ -456,15 +487,15 @@ export function AttendancePage() {
         {loading ? (
           <div className="grid grid-cols-7 gap-1.5">{Array.from({ length: 7 }).map((_, i) => <div key={i} className="h-14 rounded-xl bg-muted animate-pulse" />)}</div>
         ) : (
-          <div className="grid grid-cols-5 sm:grid-cols-8 gap-1.5">
+          <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
             {days.map((d) => {
               const s = DAY_STYLE[d.status];
               return (
-                <div key={d.date.toISOString()} className={cn("rounded-xl border px-1 py-1.5 text-center min-w-0", s.cls)} title={s.label}>
-                  <p className="text-[10px] truncate">{DAY_NAMES_AR[d.date.getDay()]}</p>
-                  <p className="font-bold text-sm">{d.date.getDate().toLocaleString("ar-EG")}</p>
-                  <p className="text-[9px] truncate">{s.label}</p>
-                </div>
+                <Button variant="outline" key={d.date.toISOString()} onClick={() => openDay(d.date)} className={cn("h-24 flex-col gap-1 rounded-lg px-1 py-2 text-center min-w-0 transition-transform hover:-translate-y-0.5", s.cls, d.date.toDateString() === new Date(now).toDateString() && "ring-1 ring-primary ring-offset-2 ring-offset-background")} aria-label={`تفاصيل ${formatDate(d.date.toISOString())} — ${s.label}`}>
+                  <span className="text-xs">{DAY_NAMES_AR[d.date.getDay()]}</span>
+                  <span className="font-bold text-xl tabular-nums">{d.date.getDate().toLocaleString("ar-EG")}</span>
+                  <span className="text-[10px]">{s.label}</span>
+                </Button>
               );
             })}
           </div>
@@ -482,28 +513,26 @@ export function AttendancePage() {
       {/* Admin daily rate manager */}
       {/* schedule editing moved to /attendance-settings */}
       {isAdmin && (
-        <Card className="glass-card border-primary/30 overflow-hidden">
-          <CardContent className="p-4 flex flex-wrap items-center justify-between gap-3">
+        <section className="border-b border-border pb-4 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-xl gradient-primary text-primary-foreground flex items-center justify-center shadow-luxe">
                 <Pencil className="w-5 h-5" />
               </div>
               <div>
                 <p className="font-bold">تسجيل / تعديل حضور يدوي</p>
-                <p className="text-xs text-muted-foreground">أضف حضور وانصراف أي موظف في أي يوم، أو اضغط القلم على أي جلسة لتعديلها</p>
               </div>
             </div>
-            <Button onClick={() => setAdding(true)} className="gap-2 gradient-primary text-primary-foreground">
+            <Button onClick={() => { setAddDay(undefined); setAddUser(undefined); setAdding(true); }} className="gap-2">
               <CalendarDays className="w-4 h-4" /> إضافة حضور ليوم
             </Button>
-          </CardContent>
-        </Card>
+        </section>
       )}
       {isAdmin && <AdminSalaryPanel profiles={profiles} salaries={salaries} onSaved={loadAll} />}
       {adding && (
         <AddSessionDialog
           profiles={profiles}
-          defaultUser={selectedUser !== "me" && selectedUser !== "all" ? selectedUser : user?.id ?? ""}
+          defaultUser={addUser ?? (selectedUser !== "me" && selectedUser !== "all" ? selectedUser : user?.id ?? "")}
+          defaultDay={addDay}
           onClose={() => setAdding(false)}
           onSaved={() => {
             setAdding(false);
@@ -610,7 +639,7 @@ export function AttendancePage() {
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold">{formatDate(r.check_in)}</span>
+                        <Button variant="ghost" className="h-auto px-0 py-1 font-semibold gap-2" onClick={() => openDay(new Date(r.check_in), r.user_id)}><CalendarDays className="size-4 text-primary" />{formatDate(r.check_in)}</Button>
                         {isAdmin && who && (
                           <Badge variant="outline" className="text-[10px]">
                             {who.full_name || who.email}
@@ -641,7 +670,7 @@ export function AttendancePage() {
                         <p className="font-mono font-bold text-primary">{c.pay.toFixed(2)}</p>
                       </div>
                       {isAdmin && (
-                        <Button size="icon" variant="ghost" onClick={() => setEditing(r)}>
+                        <Button size="icon" variant="ghost" aria-label="تعديل جلسة الحضور" onClick={() => setEditing(r)}>
                           <Pencil className="w-4 h-4" />
                         </Button>
                       )}
@@ -655,6 +684,60 @@ export function AttendancePage() {
       </Card>
       </div>
 
+      {detailDay && (
+        <Dialog open onOpenChange={(open) => { if (!open) setDetailDay(null); }}>
+          <DialogContent dir="rtl" className="w-[calc(100%-2rem)] sm:max-w-lg max-h-[85dvh] overflow-y-auto p-0 gap-0">
+            <DialogHeader className="p-5 pe-12 border-b border-border bg-muted/40 text-right">
+              <div className="flex items-center gap-3">
+                <span className="size-11 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0"><CalendarDays className="size-6" /></span>
+                <div className="min-w-0">
+                  <DialogTitle className="text-lg">{detailDay.toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long" })}</DialogTitle>
+                  <DialogDescription className="mt-1 break-words">{profiles[detailUser ?? ""]?.full_name || profiles[detailUser ?? ""]?.email || myName}</DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+            <div className="p-5 space-y-5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Badge variant="outline" className={cn("px-3 py-1", detailRows.length ? "text-success border-success/30 bg-success/10" : "text-muted-foreground")}>
+                  {detailRows.some((r) => !r.check_out) ? "حضور جارٍ" : detailRows.length ? "تم تسجيل الانصراف" : detailRule?.is_working_day === false ? "يوم راحة" : "لا يوجد حضور مسجل"}
+                </Badge>
+                <span className="text-xs text-muted-foreground">{detailRows.length.toLocaleString("ar-EG")} جلسة</span>
+              </div>
+              {detailRows.length === 0 ? (
+                <div className="py-6 text-center space-y-2 border-y border-dashed border-border">
+                  <Clock className="size-8 mx-auto text-muted-foreground" />
+                  <p className="font-semibold">لا توجد أوقات حضور أو انصراف لهذا اليوم</p>
+                </div>
+              ) : detailRows.map((row, i) => (
+                <div key={row.id} className="space-y-3 border-b border-border pb-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">الجلسة {(i + 1).toLocaleString("ar-EG")}</span>
+                    {isAdmin && <Button variant="ghost" size="sm" onClick={() => { setDetailDay(null); setEditing(row); }}><Pencil className="size-4" />تعديل الأوقات</Button>}
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="border-s-2 border-success ps-3 py-1"><p className="text-xs text-muted-foreground flex items-center gap-1.5"><LogIn className="size-3.5" />الحضور</p><p className="text-lg font-bold mt-1 tabular-nums">{formatTime(row.check_in)}</p></div>
+                    <div className="border-s-2 border-warning ps-3 py-1"><p className="text-xs text-muted-foreground flex items-center gap-1.5"><LogOutIcon className="size-3.5" />الانصراف</p><p className="text-lg font-bold mt-1 tabular-nums">{row.check_out ? formatTime(row.check_out) : "لم يسجل بعد"}</p>{row.check_out && new Date(row.check_out).toDateString() !== detailDay.toDateString() && <p className="text-xs text-muted-foreground">{formatDate(row.check_out)}</p>}</div>
+                  </div>
+                  {row.notes && <p className="text-sm break-words bg-muted/40 p-3 rounded-lg"><span className="text-muted-foreground">ملاحظات: </span>{row.notes}</p>}
+                </div>
+              ))}
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div><Clock className="size-4 text-primary mx-auto mb-2" /><p className="text-[11px] text-muted-foreground">الساعات المحسوبة</p><p className="text-sm font-bold mt-1">{formatDuration(detailTotals.hours)}</p></div>
+                <div><Timer className="size-4 text-warning mx-auto mb-2" /><p className="text-[11px] text-muted-foreground">الإضافي</p><p className="text-sm font-bold mt-1">{formatDuration(detailTotals.overtime)}</p></div>
+                <div><Wallet className="size-4 text-success mx-auto mb-2" /><p className="text-[11px] text-muted-foreground">المستحقات</p><p className="text-sm font-bold mt-1 break-words">{money(detailTotals.pay)}</p></div>
+              </div>
+              {detailRows.some((r) => !r.check_out) && <p className="text-xs text-muted-foreground">مستحقات الجلسة الجارية تظهر بعد تسجيل الانصراف.</p>}
+            </div>
+            <DialogFooter className="p-4 border-t border-border bg-muted/30 gap-2 flex-wrap">
+              {isAdmin && <>
+                <Button onClick={() => { setAddDay(toLocalDateTimeInput(detailDay.toISOString()).slice(0, 10)); setAddUser(detailUser ?? undefined); setDetailDay(null); setAdding(true); }}><Plus className="size-4" />إضافة جلسة</Button>
+                <Button variant="outline" asChild><Link to="/attendance-settings"><Settings2 className="size-4" />إعدادات الحضور</Link></Button>
+              </>}
+              <Button variant="ghost" onClick={() => setDetailDay(null)}>إغلاق</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
       {editing && (
         <EditSessionDialog
           row={editing}
@@ -875,18 +958,20 @@ function EditSessionDialog({
 function AddSessionDialog({
   profiles,
   defaultUser,
+  defaultDay,
   onClose,
   onSaved,
 }: {
   profiles: Record<string, ProfileRow>;
   defaultUser: string;
+  defaultDay?: string;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const pad = (n: number) => String(n).padStart(2, "0");
   const t = new Date();
   const [userId, setUserId] = useState(defaultUser);
-  const [day, setDay] = useState(`${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`);
+  const [day, setDay] = useState(defaultDay ?? `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`);
   const [inTime, setInTime] = useState("08:00");
   const [outTime, setOutTime] = useState("16:00");
   const [notes, setNotes] = useState("");
