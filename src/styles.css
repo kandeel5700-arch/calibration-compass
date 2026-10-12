@@ -192,7 +192,7 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: "Cairo", system-ui, sans-serif;
     font-weight: 700;
-    letter-spacing: -0.01em;
+    letter-spacing: 0;
   }
 }
 
@@ -393,3 +393,7 @@
   100% { box-shadow: 0 0 0 0 transparent; }
 }
 .attend-ring { animation: attend-ring 2s ease-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .attend-ring, .animate-fade-up { animation: none; }
+}
