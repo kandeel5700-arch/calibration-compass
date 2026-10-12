@@ -314,7 +314,8 @@ export function AttendancePage() {
   return (
     <div className="space-y-4 md:space-y-5 max-w-5xl mx-auto" dir="rtl">
       {/* Welcome card */}
-      <section className="rounded-3xl border border-border bg-card shadow-card p-4 md:p-6 animate-fade-up">
+      <section className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/15 via-card to-card shadow-luxe p-4 md:p-6 animate-fade-up">
+        <div aria-hidden className="pointer-events-none absolute -top-16 -left-16 w-48 h-48 rounded-full bg-primary/20 blur-3xl" />
         <div className="flex items-center gap-3 md:gap-4">
           <div className="w-14 h-14 md:w-16 md:h-16 shrink-0 rounded-2xl overflow-hidden bg-primary/10 text-primary flex items-center justify-center ring-2 ring-primary/20">
             {myAvatar ? (
@@ -359,7 +360,7 @@ export function AttendancePage() {
             openCheckIn ? "bg-warning text-warning-foreground" : "bg-primary text-primary-foreground",
           )}
         >
-          <span className="w-14 h-14 shrink-0 rounded-2xl bg-background/20 flex items-center justify-center">
+          <span className={cn("w-14 h-14 shrink-0 rounded-2xl bg-background/20 flex items-center justify-center", !busy && "attend-ring")}>
             {busy ? (
               <Loader2 className="w-7 h-7 animate-spin" />
             ) : openCheckIn ? (
@@ -375,6 +376,14 @@ export function AttendancePage() {
                 ? `حضرت الساعة ${formatTime(openCheckIn.check_in)} · لا تنسَ تسجيل انصرافك`
                 : "ابدأ يوم عملك"}
             </span>
+            {openCheckIn && (
+              <span className="block mt-2 h-2 rounded-full bg-background/25 overflow-hidden">
+                <span
+                  className="block h-full rounded-full bg-background/80 transition-all duration-1000"
+                  style={{ width: `${Math.min(100, (liveDuration / STANDARD_HOURS) * 100)}%` }}
+                />
+              </span>
+            )}
           </span>
         </button>
 
@@ -680,7 +689,7 @@ function StatTile({
     accent: "bg-accent text-accent-foreground",
   }[tone];
   return (
-    <div className="rounded-2xl border border-border bg-card shadow-card p-3 md:p-4 min-h-[96px] flex flex-col justify-between gap-2 transition-transform hover:-translate-y-0.5 min-w-0">
+    <div className="rounded-2xl border border-border bg-gradient-to-b from-card to-muted/30 shadow-card p-3 md:p-4 min-h-[96px] hover:shadow-luxe hover:border-primary/30 flex flex-col justify-between gap-2 transition-transform hover:-translate-y-0.5 min-w-0">
       <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${toneCls}`}>
         <Icon className="w-5 h-5" />
       </div>
