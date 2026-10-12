@@ -863,6 +863,94 @@ function EditSessionDialog({
   );
 }
 
+function AddSessionDialog({
+  profiles,
+  defaultUser,
+  onClose,
+  onSaved,
+}: {
+  profiles: Record<string, ProfileRow>;
+  defaultUser: string;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const t = new Date();
+  const [userId, setUserId] = useState(defaultUser);
+  const [day, setDay] = useState(`${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`);
+  const [inTime, setInTime] = useState("08:00");
+  const [outTime, setOutTime] = useState("16:00");
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    if (!userId) return toast.error("اختر الموظف");
+    const checkIn = new Date(`${day}T${inTime}`);
+    const checkOut = outTime ? new Date(`${day}T${outTime}`) : null;
+    if (checkOut && checkOut <= checkIn) return toast.error("وقت الانصراف يجب أن يكون بعد الحضور");
+    setSaving(true);
+    const { error } = await supabase.from("attendance").insert({
+      user_id: userId,
+      check_in: checkIn.toISOString(),
+      check_out: checkOut ? checkOut.toISOString() : null,
+      notes: notes || null,
+    });
+    setSaving(false);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("تمت إضافة الحضور ✓");
+      onSaved();
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent dir="rtl">
+        <DialogHeader>
+          <DialogTitle>إضافة حضور يدوي</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>الموظف</Label>
+            <Select value={userId} onValueChange={setUserId}>
+              <SelectTrigger><SelectValue placeholder="اختر الموظف" /></SelectTrigger>
+              <SelectContent>
+                {Object.values(profiles).map((p) => (
+                  <SelectItem key={p.user_id} value={p.user_id}>
+                    {p.full_name || p.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>اليوم</Label>
+            <Input type="date" value={day} onChange={(e) => setDay(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>الحضور</Label>
+              <Input type="time" value={inTime} onChange={(e) => setInTime(e.target.value)} />
+            </div>
+            <div>
+              <Label>الانصراف</Label>
+              <Input type="time" value={outTime} onChange={(e) => setOutTime(e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <Label>ملاحظات</Label>
+            <Input value={notes} onChange={(e) => setNotes(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose}>إلغاء</Button>
+          <Button onClick={save} disabled={saving}>{saving ? "جارٍ الحفظ..." : "حفظ"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function AdminSchedulePanel({
   schedule,
   onSaved,
