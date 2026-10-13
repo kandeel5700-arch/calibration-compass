@@ -8,7 +8,7 @@ import jsPDF from "jspdf";
  */
 function resolveColor(value: string): string {
   if (!value) return value;
-  if (!/oklch|oklab|color\(/i.test(value)) return value;
+  if (!/(?:ok)?(?:lch|lab)|color\(/i.test(value)) return value;
   const probe = document.createElement("div");
   probe.style.color = value;
   probe.style.display = "none";
@@ -39,12 +39,12 @@ function inlineSafeColors(root: HTMLElement) {
     const cs = getComputedStyle(el);
     for (const prop of COLOR_PROPS) {
       const v = (cs as any)[prop] as string | undefined;
-      if (v && /oklch|oklab|color\(/i.test(v)) {
+      if (v && /(?:ok)?(?:lch|lab)|color\(/i.test(v)) {
         (el.style as any)[prop] = resolveColor(v);
       }
     }
     const bgImg = cs.backgroundImage;
-    if (bgImg && /oklch|oklab/i.test(bgImg)) {
+    if (bgImg && /(?:ok)?(?:lch|lab)/i.test(bgImg)) {
       // Gradients with oklch can't easily be resolved — drop to plain bg.
       el.style.backgroundImage = "none";
     }
