@@ -22,6 +22,7 @@ import { Route as EquipmentRouteImport } from './routes/equipment'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ControlPointsRouteImport } from './routes/control-points'
 import { Route as AttendanceSettingsRouteImport } from './routes/attendance-settings'
+import { Route as AttendanceInsightsRouteImport } from './routes/attendance-insights'
 import { Route as AttendanceRouteImport } from './routes/attendance'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -90,6 +91,11 @@ const AttendanceSettingsRoute = AttendanceSettingsRouteImport.update({
   path: '/attendance-settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AttendanceInsightsRoute = AttendanceInsightsRouteImport.update({
+  id: '/attendance-insights',
+  path: '/attendance-insights',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AttendanceRoute = AttendanceRouteImport.update({
   id: '/attendance',
   path: '/attendance',
@@ -104,6 +110,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
+  '/attendance-insights': typeof AttendanceInsightsRoute
   '/attendance-settings': typeof AttendanceSettingsRoute
   '/control-points': typeof ControlPointsRoute
   '/dashboard': typeof DashboardRoute
@@ -121,6 +128,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
+  '/attendance-insights': typeof AttendanceInsightsRoute
   '/attendance-settings': typeof AttendanceSettingsRoute
   '/control-points': typeof ControlPointsRoute
   '/dashboard': typeof DashboardRoute
@@ -139,6 +147,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
+  '/attendance-insights': typeof AttendanceInsightsRoute
   '/attendance-settings': typeof AttendanceSettingsRoute
   '/control-points': typeof ControlPointsRoute
   '/dashboard': typeof DashboardRoute
@@ -158,6 +167,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/attendance'
+    | '/attendance-insights'
     | '/attendance-settings'
     | '/control-points'
     | '/dashboard'
@@ -175,6 +185,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/attendance'
+    | '/attendance-insights'
     | '/attendance-settings'
     | '/control-points'
     | '/dashboard'
@@ -192,6 +203,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/attendance'
+    | '/attendance-insights'
     | '/attendance-settings'
     | '/control-points'
     | '/dashboard'
@@ -210,6 +222,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AttendanceRoute: typeof AttendanceRoute
+  AttendanceInsightsRoute: typeof AttendanceInsightsRoute
   AttendanceSettingsRoute: typeof AttendanceSettingsRoute
   ControlPointsRoute: typeof ControlPointsRoute
   DashboardRoute: typeof DashboardRoute
@@ -318,6 +331,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AttendanceSettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/attendance-insights': {
+      id: '/attendance-insights'
+      path: '/attendance-insights'
+      fullPath: '/attendance-insights'
+      preLoaderRoute: typeof AttendanceInsightsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/attendance': {
       id: '/attendance'
       path: '/attendance'
@@ -338,6 +358,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AttendanceRoute: AttendanceRoute,
+  AttendanceInsightsRoute: AttendanceInsightsRoute,
   AttendanceSettingsRoute: AttendanceSettingsRoute,
   ControlPointsRoute: ControlPointsRoute,
   DashboardRoute: DashboardRoute,
