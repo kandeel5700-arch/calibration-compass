@@ -74,6 +74,9 @@ export async function exportElementToPDF(
   })));
 
   const clone = element.cloneNode(true) as HTMLElement;
+  const direction = getComputedStyle(element).direction;
+  clone.setAttribute("dir", direction);
+  clone.style.direction = direction;
   const wrapper = document.createElement("div");
   wrapper.style.position = "fixed";
   wrapper.style.left = "-100000px";
