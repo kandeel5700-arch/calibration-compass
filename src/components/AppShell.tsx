@@ -37,6 +37,7 @@ const NAV = [
   { to: "/control-points", label: "النقاط المساحية", icon: MapPin, adminOnly: false },
   { to: "/reports", label: "التقارير", icon: FileText, adminOnly: false },
   { to: "/profile", label: "الملف الشخصي", icon: UserIcon, adminOnly: false },
+  { to: "/attendance-insights", label: "تحليل وتصدير الحضور", icon: FileText, adminOnly: true },
   { to: "/attendance-settings", label: "إعدادات الحضور", icon: Settings, adminOnly: true },
   { to: "/users", label: "المستخدمون", icon: Users, adminOnly: true },
   { to: "/help", label: "مركز المساعدة", icon: HelpCircle, adminOnly: false },
