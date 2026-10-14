@@ -53,6 +53,14 @@
 /* Dark Luxury Technical theme — emerald + carbon */
 :root {
   --radius: 0.75rem;
+  --report-paper: #ffffff;
+  --report-ink: #203139;
+  --report-brand: #11735b;
+  --report-muted: #64747b;
+  --report-line: #d9e4e0;
+  --report-stripe: #f0f6f3;
+  --report-warning: #fff1d6;
+  --report-input: #1759a0;
 
   --background: oklch(0.18 0.015 220);
   --foreground: oklch(0.96 0.01 180);
