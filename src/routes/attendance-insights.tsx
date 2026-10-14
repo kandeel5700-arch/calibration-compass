@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
-import * as XLSX from "xlsx";
+import { useEffect, useMemo, useState } from "react";
 import { Protected } from "@/components/Protected";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +12,8 @@ import { toast } from "sonner";
 import { Sparkles, FileSpreadsheet, FileDown, Loader2, BrainCircuit } from "lucide-react";
 import {
   DEFAULT_SCHEDULE,
+  DEFAULT_SETTINGS,
+  type AttendanceSettings,
   DAY_NAMES_AR,
   computeSession,
   formatDuration,
@@ -20,7 +21,7 @@ import {
   payPeriod,
   type ScheduleMap,
 } from "@/lib/attendance";
-import { exportElementToPDF } from "@/lib/pdfExport";
+import { buildAttendanceReport } from "@/lib/attendanceReport";
 import { analyzeAttendance } from "@/lib/attendanceAi.functions";
 
 export const Route = createFileRoute("/attendance-insights")({
@@ -42,7 +43,7 @@ export const Route = createFileRoute("/attendance-insights")({
 });
 
 type Profile = { user_id: string; full_name: string | null; email: string | null };
-type Row = { id: string; user_id: string; check_in: string; check_out: string | null };
+type Row = { id: string; user_id: string; check_in: string; check_out: string | null; notes: string | null };
 
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const fmtT = (iso: string | null) =>
@@ -60,11 +61,15 @@ function InsightsPage() {
   const [loading, setLoading] = useState(false);
   const [aiText, setAiText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-  const pdfRef = useRef<HTMLDivElement>(null);
+  const [settings, setSettings] = useState<AttendanceSettings>(DEFAULT_SETTINGS);
+  const [ready, setReady] = useState(false);
+  const [exporting, setExporting] = useState<"excel" | "pdf" | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     (async () => {
       const s = await loadAttendanceSettings(supabase);
+      setSettings(s);
       const p = payPeriod(new Date(), s);
       setFrom(ymd(p.start));
       setTo(ymd(p.end));
@@ -82,27 +87,34 @@ function InsightsPage() {
         ws.data.forEach((r: any) => (sm[r.day_of_week] = r));
         setSchedule(sm);
       }
+      if (pr.error || sa.error || ws.error) { toast.error("تعذر تحميل بيانات التقرير"); setLoadError(true); }
+      else setReady(true);
     })();
   }, []);
 
   useEffect(() => {
-    if (!from || !to) return;
-    setLoading(true);
-    const start = new Date(`${from}T00:00:00`);
-    const end = new Date(`${to}T23:59:59`);
-    let q = supabase
-      .from("attendance")
-      .select("id, user_id, check_in, check_out")
-      .gte("check_in", start.toISOString())
-      .lte("check_in", end.toISOString())
-      .order("check_in");
-    if (employee !== "all") q = q.eq("user_id", employee);
-    q.then(({ data, error }) => {
-      if (error) toast.error(error.message);
-      setRows((data as Row[]) ?? []);
-      setLoading(false);
-    });
-  }, [from, to, employee]);
+    if (!ready || !from || !to || from > to) return;
+    let cancelled = false;
+    setLoading(true); setLoadError(false); setAiText("");
+    (async () => {
+      const start = new Date(`${from}T00:00:00`);
+      const end = new Date(`${to}T00:00:00`); end.setDate(end.getDate() + 1);
+      const result: Row[] = [];
+      for (let offset = 0; ; offset += 1000) {
+        let q = supabase.from("attendance").select("id, user_id, check_in, check_out, notes")
+          .gte("check_in", start.toISOString()).lt("check_in", end.toISOString())
+          .order("check_in").order("id").range(offset, offset + 999);
+        if (employee !== "all") q = q.eq("user_id", employee);
+        const { data, error } = await q;
+        if (cancelled) return;
+        if (error) { toast.error(error.message); setLoadError(true); setRows([]); setLoading(false); return; }
+        result.push(...((data as Row[]) ?? []));
+        if (!data || data.length < 1000) break;
+      }
+      if (!cancelled) { setRows(result); setLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [from, to, employee, ready]);
 
   const nameOf = (id: string) => {
     const p = profiles.find((x) => x.user_id === id);
@@ -112,12 +124,12 @@ function InsightsPage() {
   const detailed = useMemo(
     () =>
       rows.map((r) => {
-        const c = computeSession(r.check_in, r.check_out, salaries[r.user_id] ?? 0, schedule);
+        const c = computeSession(r.check_in, r.check_out, salaries[r.user_id] ?? 0, schedule, settings);
         const d = new Date(r.check_in);
         return { ...r, ...c, date: ymd(d), dayName: DAY_NAMES_AR[d.getDay()], name: nameOf(r.user_id) };
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rows, salaries, schedule, profiles],
+    [rows, salaries, schedule, profiles, settings],
   );
 
   const perEmployee = useMemo(() => {
@@ -140,44 +152,27 @@ function InsightsPage() {
 
   const periodLabel = `${from} → ${to}`;
 
-  const exportExcel = () => {
-    const wb = XLSX.utils.book_new();
-    const summary = perEmployee.map((e) => ({
-      "الموظف": e.name,
-      "أيام الحضور": e.days.size,
-      "ساعات العمل": +e.hours.toFixed(2),
-      "الساعات الإضافية": +e.ot.toFixed(2),
-      "المستحقات": +e.pay.toFixed(2),
-    }));
-    summary.push({ "الموظف": "الإجمالي", "أيام الحضور": 0, "ساعات العمل": +totals.hours.toFixed(2), "الساعات الإضافية": +totals.ot.toFixed(2), "المستحقات": +totals.pay.toFixed(2) });
-    const s1 = XLSX.utils.json_to_sheet(summary);
-    s1["!cols"] = [{ wch: 28 }, { wch: 12 }, { wch: 14 }, { wch: 16 }, { wch: 14 }];
-    const s2 = XLSX.utils.json_to_sheet(
-      detailed.map((r) => ({
-        "الموظف": r.name,
-        "التاريخ": r.date,
-        "اليوم": r.dayName,
-        "الحضور": fmtT(r.check_in),
-        "الانصراف": fmtT(r.check_out),
-        "ساعات العمل": +r.totalHours.toFixed(2),
-        "الإضافي": +r.overtimeHours.toFixed(2),
-        "المستحقات": +r.pay.toFixed(2),
-      })),
-    );
-    s2["!cols"] = [{ wch: 28 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 12 }];
-    wb.Workbook = { Views: [{ RTL: true }] };
-    XLSX.utils.book_append_sheet(wb, s1, "ملخص الموظفين");
-    XLSX.utils.book_append_sheet(wb, s2, "السجلات التفصيلية");
-    XLSX.writeFile(wb, `attendance-${from}_${to}.xlsx`);
-  };
+  const selectedProfiles = profiles.filter(p => employee === "all" || p.user_id === employee);
+  const report = useMemo(() => from && to && from <= to
+    ? buildAttendanceReport(profiles.filter(p => employee === "all" || p.user_id === employee), rows, salaries, schedule, settings, from, to)
+    : null, [profiles, employee, rows, salaries, schedule, settings, from, to]);
+  const canExport = ready && !loading && !loadError && Boolean(report?.employees.length) && from <= to;
 
-  const exportPdf = async () => {
-    if (!pdfRef.current) return;
+  const exportFile = async (kind: "excel" | "pdf", userId?: string) => {
+    if (!report || !canExport) return;
+    setExporting(kind);
+    const selection = userId ? { ...report, employees: report.employees.filter(e => e.profile.user_id === userId) } : report;
     try {
-      await exportElementToPDF(pdfRef.current, `attendance-${from}_${to}.pdf`);
-    } catch (e: any) {
-      toast.error(e?.message ?? "فشل تصدير PDF");
-    }
+      if (kind === "excel") {
+        const { exportAttendanceExcel } = await import("@/lib/attendanceExcel");
+        await exportAttendanceExcel(selection);
+      } else {
+        const { exportAttendancePdf } = await import("@/lib/attendancePdf");
+        await exportAttendancePdf(selection);
+      }
+      toast.success("تم تجهيز التقرير بنجاح");
+    } catch (e) { toast.error(e instanceof Error ? e.message : "فشل التصدير"); }
+    finally { setExporting(null); }
   };
 
   const runAi = async () => {
@@ -215,7 +210,7 @@ function InsightsPage() {
         <div className="size-11 rounded-xl bg-primary/15 text-primary grid place-items-center"><BrainCircuit className="size-6" /></div>
         <div>
           <h1 className="text-2xl font-bold">تحليل وتصدير الحضور</h1>
-          <p className="text-sm text-muted-foreground">اختر الموظف والفترة، ثم صدّر التقرير أو اطلب تحليلًا ذكيًا.</p>
+          <p className="text-sm text-muted-foreground">تقارير الموظفين والمستحقات</p>
         </div>
       </header>
 
@@ -236,9 +231,9 @@ function InsightsPage() {
           <div className="space-y-2"><Label>من</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
           <div className="space-y-2"><Label>إلى</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
           <div className="sm:col-span-3 flex flex-wrap gap-2">
-            <Button onClick={exportExcel} variant="outline" disabled={!detailed.length}><FileSpreadsheet className="size-4" />تصدير Excel</Button>
-            <Button onClick={exportPdf} variant="outline" disabled={!detailed.length}><FileDown className="size-4" />تصدير PDF</Button>
-            <Button onClick={runAi} disabled={aiLoading || employee === "all"}>
+            <Button onClick={() => exportFile("excel")} variant="outline" disabled={!canExport || !!exporting}>{exporting === "excel" ? <Loader2 className="size-4 animate-spin" /> : <FileSpreadsheet className="size-4" />}تصدير Excel</Button>
+            <Button onClick={() => exportFile("pdf")} variant="outline" disabled={!canExport || !!exporting}>{exporting === "pdf" ? <Loader2 className="size-4 animate-spin" /> : <FileDown className="size-4" />}تصدير PDF</Button>
+            <Button onClick={runAi} disabled={aiLoading || employee === "all" || !canExport || !detailed.length}>
               {aiLoading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
               تحليل ذكي للحضور
             </Button>
@@ -260,7 +255,24 @@ function InsightsPage() {
         </Card>
       )}
 
-      <div ref={pdfRef} className="space-y-4 bg-background p-4 rounded-xl">
+      {from > to && <p role="alert" className="text-destructive">تاريخ النهاية يجب ألا يسبق تاريخ البداية.</p>}
+      <section className="space-y-3">
+        <div className="flex justify-between items-center"><h2 className="text-lg font-bold">كشوف الموظفين</h2><span className="text-sm text-muted-foreground">{selectedProfiles.length} موظف</span></div>
+        <div className="grid gap-3 lg:grid-cols-2">
+          {report?.employees.map(e => (
+            <div key={e.profile.user_id} className="rounded-lg border border-border bg-card p-4 space-y-3">
+              <div className="min-w-0"><h3 className="font-bold break-words">{e.name}</h3><p className="text-xs text-muted-foreground break-all">{e.profile.email}</p></div>
+              <div className="grid grid-cols-3 gap-2 text-sm"><div><p className="text-xs text-muted-foreground">أيام الحضور</p><strong>{e.attendanceDays}</strong></div><div><p className="text-xs text-muted-foreground">الأجر اليومي</p><strong>{e.dailyRate.toFixed(2)}</strong></div><div><p className="text-xs text-muted-foreground">المستحقات</p><strong className="text-primary">{e.pay.toFixed(2)}</strong></div></div>
+              {!!e.openSessions && <p className="text-xs text-warning">{e.openSessions} جلسة بدون انصراف</p>}
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" aria-label={`Excel — ${e.name}`} disabled={!canExport || !!exporting} onClick={() => exportFile("excel", e.profile.user_id)}><FileSpreadsheet className="size-4"/>Excel الموظف</Button>
+                <Button size="sm" variant="outline" aria-label={`PDF — ${e.name}`} disabled={!canExport || !!exporting} onClick={() => exportFile("pdf", e.profile.user_id)}><FileDown className="size-4"/>PDF الموظف</Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+      <div className="space-y-4">
         <div>
           <h2 className="text-xl font-bold">تقرير الحضور والانصراف — UECC Survey</h2>
           <p className="text-sm text-muted-foreground">الفترة: {periodLabel} · {employee === "all" ? "كل الموظفين" : nameOf(employee)}</p>
