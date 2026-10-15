@@ -61,6 +61,9 @@
   --report-stripe: #f0f6f3;
   --report-warning: #fff1d6;
   --report-input: #1759a0;
+  --report-form-ink: #202020;
+  --report-form-line: #707070;
+  --report-form-header: #eeeeee;
 
   --background: oklch(0.18 0.015 220);
   --foreground: oklch(0.96 0.01 180);
