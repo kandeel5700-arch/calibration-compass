@@ -1,4 +1,6 @@
 import type ExcelJS from "exceljs";
+import logoUrl from "@/assets/uecc-logo.png";
+import { addEmployeeAttendanceForm } from "./attendanceExcelForm";
 import { downloadReport, reportColors, reportFilename, reportTime, type AttendanceReport } from "./attendanceReport";
 
 export async function createAttendanceExcel(report: AttendanceReport): Promise<Blob> {
@@ -6,7 +8,12 @@ export async function createAttendanceExcel(report: AttendanceReport): Promise<B
   const wb = new Excel.Workbook();
   wb.creator = "UECC Survey"; wb.created = new Date(); wb.title = "تقرير الحضور والمستحقات";
   wb.calcProperties.fullCalcOnLoad = true;
-  const colors = reportColors();
+  const colors = Object.fromEntries(Object.entries(reportColors()).map(([key, value]) => [key, `FF${value}`]));
+  let logoId: number | undefined;
+  try {
+    const response = await fetch(logoUrl);
+    if (response.ok) logoId = wb.addImage({ buffer: new Uint8Array(await response.arrayBuffer()) as unknown as ExcelJS.Buffer, extension: "png" });
+  } catch { /* A missing logo must not prevent attendance export. */ }
   const numberFormat = '#,##0.00;(#,##0.00);"—"';
   const styleSheet = (sheet: ExcelJS.Worksheet, widths: number[], headerRow: number) => {
     sheet.views = [{ rightToLeft: true, state: "frozen", ySplit: headerRow, xSplit: 2 }];
@@ -51,20 +58,7 @@ export async function createAttendanceExcel(report: AttendanceReport): Promise<B
     let name = base, suffix = 1;
     while (names.has(name)) name = `${base}-${suffix++}`;
     names.add(name);
-    const sheet = wb.addWorksheet(name);
-    banner(sheet, `UECC Survey | كشف حضور ${e.name}`, 17);
-    sheet.addRow([`الموظف: ${e.name} | البريد: ${e.profile.email || "غير مسجل"}`]); sheet.mergeCells("A4:Q4");
-    sheet.addRow([`معرّف الموظف: ${e.profile.user_id} | الأجر اليومي: ${e.dailyRate.toFixed(2)} | أيام الحضور: ${e.attendanceDays}`]); sheet.mergeCells("A5:Q5");
-    sheet.addRow(["التاريخ", "اليوم", "الحالة", "عدد الجلسات", "بدء الدوام", "نهاية الدوام", "أول حضور", "آخر انصراف", "الساعات", "ساعات عادية", "إضافي محسوب", "تأخير (دقيقة)", "سعر الساعة", "مستحقات العمل", "مستحقات الإضافي", "الإجمالي", "ملاحظات"]);
-    e.days.forEach(d => {
-      const r = sheet.addRow([d.date, d.day, d.status, d.sessions.length, d.scheduledStart, d.scheduledEnd, d.checkIn, d.checkOut, d.hours, d.regular, d.overtime, d.lateMinutes, d.hourlyRate, { formula: `J${sheet.rowCount + 1}*M${sheet.rowCount + 1}`, result: d.regularPay }, { formula: `K${sheet.rowCount + 1}*M${sheet.rowCount + 1}`, result: d.overtimePay }, { formula: `N${sheet.rowCount + 1}+O${sheet.rowCount + 1}`, result: d.pay }, d.notes]);
-      r.getCell(13).note = "Source: UECC Survey — الأجر اليومي الحالي مقسومًا على ساعات اليوم القياسية.";
-    });
-    const total = sheet.addRow(["الإجمالي"]);
-    for (const c of [4, 9, 10, 11, 12, 14, 15, 16]) total.getCell(c).value = { formula: `SUM(${sheet.getColumn(c).letter}7:${sheet.getColumn(c).letter}${total.number - 1})`, result: e.days.reduce((s, d) => s + ({4:d.sessions.length,9:d.hours,10:d.regular,11:d.overtime,12:d.lateMinutes,14:d.regularPay,15:d.overtimePay,16:d.pay}[c] ?? 0), 0) };
-    styleSheet(sheet, [14, 14, 24, 14, 14, 14, 14, 18, 15, 15, 17, 18, 16, 20, 20, 22, 46], 6);
-    e.days.forEach((d, i) => { if (d.status === "انصراف غير مسجل") sheet.getRow(i + 7).getCell(3).fill = { type: "pattern", pattern: "solid", fgColor: { argb: colors.warning } }; });
-    total.font = { name: "Arial", bold: true, color: { argb: colors.brand } };
+    addEmployeeAttendanceForm(wb, name, e, report, logoId);
   }
   const sessions = wb.addWorksheet("كل الجلسات");
   banner(sessions, "UECC Survey | تفاصيل كل جلسة حضور", 10);

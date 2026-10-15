@@ -55,7 +55,7 @@ export function reportColors() {
     const value = css.getPropertyValue(`--report-${key}`).trim().replace("#", "").toUpperCase();
     return value.length === 3 ? value.split("").map(c => c + c).join("") : value;
   };
-  return { paper: read("paper"), ink: read("ink"), brand: read("brand"), muted: read("muted"), line: read("line"), stripe: read("stripe"), warning: read("warning"), input: read("input") };
+  return { paper: read("paper"), ink: read("ink"), brand: read("brand"), muted: read("muted"), line: read("line"), stripe: read("stripe"), warning: read("warning"), input: read("input"), formInk: read("form-ink"), formLine: read("form-line"), formHeader: read("form-header") };
 }
 
 export function downloadReport(blob: Blob, filename: string) {
