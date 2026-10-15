@@ -21,7 +21,6 @@ export async function createAttendancePdf(report: AttendanceReport): Promise<Blo
   const number = (n: number) => n.toFixed(2);
   let pageTitle = "ملخص الموظفين";
   const header = () => {
-    pdf.setFillColor(hex("paper")); pdf.rect(0, 0, 297, 210, "F");
     pdf.setFillColor(hex("brand")); pdf.rect(12, 12, 273, 1.4, "F");
     if (ctx) pdf.addImage(logo, "PNG", 13, 17, 22, 22);
     text("UECC Survey", 284, 24, 19, "brand");

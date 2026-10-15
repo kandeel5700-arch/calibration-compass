@@ -12,7 +12,7 @@ export async function createAttendanceExcel(report: AttendanceReport): Promise<B
     sheet.views = [{ rightToLeft: true, state: "frozen", ySplit: headerRow, xSplit: 2 }];
     sheet.columns = widths.map(width => ({ width }));
     sheet.pageSetup = { paperSize: 9, orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0, printTitlesRow: `1:${headerRow}` };
-    sheet.headerFooter.oddFooter = "UECC Survey | صفحة &P من &N";
+    sheet.headerFooter.oddFooter = "&CUECC Survey | صفحة &P من &N";
     sheet.eachRow((row, index) => {
       row.height = index === 1 ? 34 : index >= headerRow ? 28 : 24;
       row.eachCell({ includeEmpty: true }, cell => {
