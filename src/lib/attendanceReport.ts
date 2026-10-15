@@ -51,7 +51,10 @@ export function buildAttendanceReport(profiles: ReportProfile[], rows: ReportRow
 
 export function reportColors() {
   const css = getComputedStyle(document.documentElement);
-  const read = (key: string) => css.getPropertyValue(`--report-${key}`).trim().replace("#", "").toUpperCase();
+  const read = (key: string) => {
+    const value = css.getPropertyValue(`--report-${key}`).trim().replace("#", "").toUpperCase();
+    return value.length === 3 ? value.split("").map(c => c + c).join("") : value;
+  };
   return { paper: read("paper"), ink: read("ink"), brand: read("brand"), muted: read("muted"), line: read("line"), stripe: read("stripe"), warning: read("warning"), input: read("input") };
 }
 
