@@ -4,6 +4,7 @@
 - [x] Verify the signed-in day-details flow and page rendering.
 
 # Professional attendance exports
+- [ ] Match individual Excel sheets to the uploaded paper attendance form and verify layout and formulas.
 - [x] Create detailed per-employee workbooks with formatted daily records and totals.
 - [x] Create paginated PDF employee reports with readable tables and signatures.
 - [x] Generate test-data Excel/PDF, inspect all PDF pages and verify workbook structure and cached totals.
