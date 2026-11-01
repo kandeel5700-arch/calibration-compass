@@ -8,4 +8,4 @@
 - [x] Create detailed per-employee workbooks with formatted daily records and totals.
 - [x] Create paginated PDF employee reports with readable tables and signatures.
 - [x] Generate test-data Excel/PDF, inspect all PDF pages and verify workbook structure and cached totals.
-- [ ] Verify real-data downloads as admin — blocked: injected session redirected to login; requesting a fresh session.
+- [ ] Verify real-data downloads as admin — blocked: injected session redirected to login and a fresh session could not be minted; requires user sign-in.

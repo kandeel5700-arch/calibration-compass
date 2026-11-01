@@ -93,7 +93,7 @@ export function addEmployeeAttendanceForm(wb: ExcelJS.Workbook, name: string, e:
   sheet.getRow(1).height=32;
   sheet.getCell(11,4).numFmt=money;sheet.getCell(9,4).numFmt=money;
   for (const c of [27,28,29]) sheet.getColumn(c).hidden=true;
-  sheet.pageSetup={paperSize:8,orientation:"landscape",fitToPage:true,fitToWidth:1,fitToHeight:0,printTitlesRow:"15:16",printArea:`A1:Z${total+6}`,horizontalCentered:true,margins:{left:0.25,right:0.25,top:0.3,bottom:0.3,header:0.1,footer:0.1}};
+  sheet.pageSetup={paperSize:9,orientation:"landscape",fitToPage:true,fitToWidth:1,fitToHeight:0,printTitlesRow:"15:16",printArea:`A1:Z${total+6}`,horizontalCentered:true,margins:{left:0.25,right:0.25,top:0.3,bottom:0.3,header:0.1,footer:0.1}};
   sheet.headerFooter.oddFooter="&CUECC Survey | صفحة &P من &N";
   return sheet;
 }
