@@ -12,7 +12,7 @@ export async function createAttendanceExcel(report: AttendanceReport): Promise<B
   let logoId: number | undefined;
   try {
     const response = await fetch(logoUrl);
-    if (response.ok) logoId = wb.addImage({ buffer: new Uint8Array(await response.arrayBuffer()) as unknown as ExcelJS.Buffer, extension: "png" });
+    if (response.ok) logoId = wb.addImage({ buffer: new Uint8Array(await response.arrayBuffer()) as unknown as ArrayBuffer, extension: "png" });
   } catch { /* A missing logo must not prevent attendance export. */ }
   const numberFormat = '#,##0.00;(#,##0.00);"—"';
   const styleSheet = (sheet: ExcelJS.Worksheet, widths: number[], headerRow: number) => {
