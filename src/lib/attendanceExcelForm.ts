@@ -48,10 +48,13 @@ export function addEmployeeAttendanceForm(wb: ExcelJS.Workbook, name: string, e:
     const regularMinutes = Math.round(d.regular * 60), overtimeMinutes = Math.round(d.overtime * 60);
     const unpaidMinutes = Math.max(0, Math.round((d.hours - d.regular - d.overtime) * 60));
     const values: ExcelJS.CellValue[] = [i+1,d.date,d.day,e.name,null,"يومي",d.status,d.sessions.length,d.checkIn,d.checkOut,d.scheduledStart,d.scheduledEnd,
-      Math.floor(regularMinutes/60), regularMinutes%60, {formula:`(M${r}+N${r}/60)*IFERROR(X${r}/${d.standardHours || 8},0)`,result:d.regularPay},
-      Math.floor(overtimeMinutes/60), overtimeMinutes%60, {formula:`(P${r}+Q${r}/60)*IFERROR(X${r}/${d.standardHours || 8},0)`,result:d.overtimePay},
+      Math.floor(regularMinutes/60), regularMinutes%60, {formula:`AB${r}*IFERROR(X${r}/AA${r},0)`,result:d.regularPay},
+      Math.floor(overtimeMinutes/60), overtimeMinutes%60, {formula:`AC${r}*IFERROR(X${r}/AA${r},0)`,result:d.overtimePay},
       d.lateMinutes,unpaidMinutes,null,null,null,e.dailyRate,{formula:`SUM(O${r},R${r})`,result:d.pay},d.notes || null];
     values.forEach((v,c) => { sheet.getCell(r,c+1).value=v; });
+    sheet.getCell(r,27).value=d.standardHours || 8;
+    sheet.getCell(r,28).value=d.regular;
+    sheet.getCell(r,29).value=d.overtime;
     for (const c of [5,21,22,23]) sheet.getCell(r,c).note = "غير مسجل بالتطبيق؛ تُرك فارغًا دون افتراض قيمة أو خصم.";
     sheet.getCell(r,25).note = "Source: UECC Survey — مستحقات العمل + الإضافي طبقًا لقواعد التطبيق؛ لا يشمل بدلات أو خصومات غير مسجلة.";
     sheet.getCell(r,24).note = `Source: UECC Survey, ${report.generatedAt}, الأجر اليومي الحالي؛ ساعات اليوم القياسية: ${d.standardHours}.`;
@@ -89,6 +92,7 @@ export function addEmployeeAttendanceForm(wb: ExcelJS.Workbook, name: string, e:
   sheet.getCell(12,1).font={name:"Arial",size:12,bold:true,color:{argb:ink}};
   sheet.getRow(1).height=32;
   sheet.getCell(11,4).numFmt=money;sheet.getCell(9,4).numFmt=money;
+  for (const c of [27,28,29]) sheet.getColumn(c).hidden=true;
   sheet.pageSetup={paperSize:8,orientation:"landscape",fitToPage:true,fitToWidth:1,fitToHeight:0,printTitlesRow:"15:16",printArea:`A1:Z${total+6}`,horizontalCentered:true,margins:{left:0.25,right:0.25,top:0.3,bottom:0.3,header:0.1,footer:0.1}};
   sheet.headerFooter.oddFooter="&CUECC Survey | صفحة &P من &N";
   return sheet;
