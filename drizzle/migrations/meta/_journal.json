@@ -15,6 +15,20 @@
       "when": 1791644377579,
       "tag": "0001_attendance_settings_period_mode",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794642462267,
+      "tag": "0002_tighten_selected_rls_access",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794642594978,
+      "tag": "0003_enforce_profile_directory_rls",
+      "breakpoints": true
     }
   ]
 }

@@ -3,3 +3,4 @@
 - Attendance exports use a shared browser-safe report model and the existing computeSession rules; this keeps Excel, PDF and displayed payroll totals consistent without changing payroll logic.
 - Load ExcelJS and PDF export libraries only when exporting; this keeps the attendance page lightweight and SSR safe.
 - Employee Excel form layout lives in a dedicated browser-safe formatter using the shared report model; this separates paper styling from payroll calculations.
+- Keep profile emails private behind owner/admin row access and expose only name/avatar through an approved-staff directory view, so staff screens can identify coworkers without leaking account contact data.

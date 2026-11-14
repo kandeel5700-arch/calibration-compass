@@ -1,0 +1,1 @@
+ALTER VIEW public.profile_directory SET (security_invoker = true);

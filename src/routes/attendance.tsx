@@ -109,7 +109,7 @@ export function AttendancePage() {
 
     // Profiles, salaries, work schedule
     const [{ data: profs }, { data: sals }, { data: sched }] = await Promise.all([
-      supabase.from("profiles").select("user_id, full_name, email, avatar_url"),
+      supabase.from("profile_directory").select("user_id, full_name, avatar_url"),
       supabase.from("user_salary").select("user_id, daily_rate"),
       supabase.from("work_schedule").select("*"),
     ]);

@@ -62,9 +62,8 @@ interface DailyTask {
 }
 
 interface ProfileLite {
-  user_id: string;
+  user_id: string | null;
   full_name: string | null;
-  email: string | null;
 }
 
 function todayISO() {
@@ -152,12 +151,12 @@ function TasksPage() {
     );
     if (ids.length) {
       const { data: profs } = await supabase
-        .from("profiles")
-        .select("user_id, full_name, email")
+        .from("profile_directory")
+        .select("user_id, full_name")
         .in("user_id", ids);
       const map: Record<string, ProfileLite> = {};
       (profs ?? []).forEach((p) => {
-        map[p.user_id] = p as ProfileLite;
+        if (p.user_id) map[p.user_id] = p as ProfileLite;
       });
       setProfiles(map);
     } else {
@@ -389,8 +388,9 @@ function TasksPage() {
                       onClick={() =>
                         done ? handleUndo(t) : setCompleteTask(t)
                       }
+                      disabled={done && !isAdmin && t.completed_by !== user?.id}
                       className={cn(
-                        "mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
+                        "mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all disabled:cursor-not-allowed disabled:opacity-60",
                         done
                           ? "bg-success border-success text-white"
                           : "border-muted-foreground/40 hover:border-primary",
@@ -426,9 +426,7 @@ function TasksPage() {
                           <div className="flex items-center gap-2 text-success">
                             <UserIcon className="w-3.5 h-3.5" />
                             <span className="font-medium">
-                              {completer?.full_name ||
-                                completer?.email ||
-                                "مستخدم"}
+                              {completer?.full_name || "مستخدم"}
                             </span>
                             <span className="text-muted-foreground">
                               <Clock className="w-3 h-3 inline ml-1" />
