@@ -9,6 +9,7 @@ import {
   serializeCoordinates,
   serializeDxf,
   serializeGsi,
+  serializeSdr,
   type SurveyPoint,
 } from "./surveyConverter";
 
@@ -38,6 +39,16 @@ describe("survey coordinate conversion", () => {
     assert.equal(imported[0]?.easting, 123.456);
     assert.equal(imported[0]?.northing, -54.321);
     assert.equal(imported[0]?.elevation, 2.5);
+  });
+
+  it("exports SDR coordinate records using the fixed-width point fields", () => {
+    const source: SurveyPoint[] = [{ id: "p1", point: "P1", easting: 10.25, northing: 20.5, elevation: 3, description: "" }];
+    const output = serializeSdr(source);
+    const imported = parseSurveyFileText(output, "sdr");
+    assert.equal(imported[0]?.point, "P1");
+    assert.equal(imported[0]?.easting, 10.25);
+    assert.equal(imported[0]?.northing, 20.5);
+    assert.equal(imported[0]?.elevation, 3);
   });
 
   it("marks repeated coordinates and removes unsafe filename characters", () => {

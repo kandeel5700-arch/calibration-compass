@@ -23,6 +23,7 @@ import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as SurveyConverterRouteImport } from './routes/survey-converter'
 import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as UsersRouteImport } from './routes/users'
 
@@ -96,6 +97,11 @@ const SignupRoute = SignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SurveyConverterRoute = SurveyConverterRouteImport.update({
+  id: '/survey-converter',
+  path: '/survey-converter',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TasksRoute = TasksRouteImport.update({
   id: '/tasks',
   path: '/tasks',
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/reports': typeof ReportsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/survey-converter': typeof SurveyConverterRoute
   '/tasks': typeof TasksRoute
   '/users': typeof UsersRoute
 }
@@ -140,6 +147,7 @@ export interface FileRoutesByTo {
   '/reports': typeof ReportsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/survey-converter': typeof SurveyConverterRoute
   '/tasks': typeof TasksRoute
   '/users': typeof UsersRoute
 }
@@ -159,6 +167,7 @@ export interface FileRoutesById {
   '/reports': typeof ReportsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/survey-converter': typeof SurveyConverterRoute
   '/tasks': typeof TasksRoute
   '/users': typeof UsersRoute
 }
@@ -179,6 +188,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/reset-password'
     | '/signup'
+    | '/survey-converter'
     | '/tasks'
     | '/users'
   fileRoutesByTo: FileRoutesByTo
@@ -197,6 +207,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/reset-password'
     | '/signup'
+    | '/survey-converter'
     | '/tasks'
     | '/users'
   id:
@@ -215,6 +226,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/reset-password'
     | '/signup'
+    | '/survey-converter'
     | '/tasks'
     | '/users'
   fileRoutesById: FileRoutesById
@@ -234,6 +246,7 @@ export interface RootRouteChildren {
   ReportsRoute: typeof ReportsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
+  SurveyConverterRoute: typeof SurveyConverterRoute
   TasksRoute: typeof TasksRoute
   UsersRoute: typeof UsersRoute
 }
@@ -338,6 +351,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/survey-converter': {
+      id: '/survey-converter'
+      path: '/survey-converter'
+      fullPath: '/survey-converter'
+      preLoaderRoute: typeof SurveyConverterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tasks': {
       id: '/tasks'
       path: '/tasks'
@@ -370,6 +390,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReportsRoute: ReportsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
+  SurveyConverterRoute: SurveyConverterRoute,
   TasksRoute: TasksRoute,
   UsersRoute: UsersRoute,
 }

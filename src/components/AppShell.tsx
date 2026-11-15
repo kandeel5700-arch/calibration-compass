@@ -12,6 +12,7 @@ import {
   ClipboardList,
   MapPin,
   Settings,
+  MapPinned,
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,6 +36,7 @@ const NAV = [
   { to: "/tasks", label: "مهام اليوم", icon: ClipboardList, adminOnly: false },
   { to: "/equipment", label: "الأجهزة", icon: Boxes, adminOnly: false },
   { to: "/control-points", label: "النقاط المساحية", icon: MapPin, adminOnly: false },
+  { to: "/survey-converter", label: "محول ملفات المساحة", icon: MapPinned, adminOnly: false },
   { to: "/reports", label: "التقارير", icon: FileText, adminOnly: false },
   { to: "/profile", label: "الملف الشخصي", icon: UserIcon, adminOnly: false },
   { to: "/attendance-insights", label: "تحليل وتصدير الحضور", icon: FileText, adminOnly: true },

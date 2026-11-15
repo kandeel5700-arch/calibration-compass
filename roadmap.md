@@ -11,6 +11,6 @@
 - [ ] Verify real-data downloads as admin — blocked: injected session redirected to login and a fresh session could not be minted; requires user sign-in.
 
 # Survey Data Converter
-- [ ] Add a responsive Arabic survey-conversion page with bidirectional file import/export.
-- [ ] Add editable coordinate preview, validation, offsets, axis swap, elevation toggle, and plot.
+- [x] Add a responsive Arabic survey-conversion page with bidirectional file import/export.
+- [x] Add editable coordinate preview, validation, offsets, axis swap, elevation toggle, and plot.
 - [ ] Add local recent-project history and verify file parsing/export paths.

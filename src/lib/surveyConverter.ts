@@ -164,7 +164,7 @@ function parseGsi(text: string): SurveyPoint[] {
     const rawEast = words.get("81");
     const rawNorth = words.get("82");
     if (!rawPoint || !rawEast || !rawNorth) return;
-    const point = rawPoint.replace(/^[+-]/, "").replace(/^0+(?=\d)/, "");
+    const point = rawPoint.trim().replace(/^[+-]/, "").replace(/^0+(?=\d)/, "");
     const elevation = parseGsiValue(words.get("83"));
     const result = makePoint(index, point, parseGsiValue(rawEast), parseGsiValue(rawNorth), elevation);
     if (result) points.push(result);
@@ -263,6 +263,18 @@ export function serializeGsi(points: SurveyPoint[], includeElevation: boolean): 
       return words.join(" ");
     })
     .join("\r\n");
+}
+
+export function serializeSdr(points: SurveyPoint[]): string {
+  const field = (value: string) => value.slice(0, 16).padEnd(16, " ");
+  const coordinate = (value: number | null) =>
+    value === null ? "".padStart(16, " ") : value.toFixed(3).padStart(16, " ");
+  return [
+    "00NMSDR33 V04-04.02",
+    ...points.map((point) =>
+      `08TP${field(point.point)}${coordinate(point.northing)}${coordinate(point.easting)}${coordinate(point.elevation)}${field("11")}`,
+    ),
+  ].join("\r\n");
 }
 
 export function projectFileName(projectName: string, extension: string): string {
