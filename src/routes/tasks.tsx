@@ -41,6 +41,16 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/tasks")({
+  head: () => ({
+    meta: [
+      { title: "مهام اليوم — UECC Survey" },
+      { name: "description", content: "متابعة المهام اليومية ومواقع العمل ونقاط التنفيذ." },
+      { property: "og:title", content: "مهام اليوم — UECC Survey" },
+      { property: "og:description", content: "إدارة حالة مهام فرق المساحة وملاحظاتها." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: () => (
     <Protected>
       <TasksPage />

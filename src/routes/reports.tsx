@@ -29,6 +29,16 @@ import {
 import { computeSession, formatDuration, loadAttendanceSettings } from "@/lib/attendance";
 
 export const Route = createFileRoute("/reports")({
+  head: () => ({
+    meta: [
+      { title: "التقارير — UECC Survey" },
+      { name: "description", content: "إنشاء تقارير الحضور والأجهزة خلال الفترات المحددة." },
+      { property: "og:title", content: "التقارير — UECC Survey" },
+      { property: "og:description", content: "تقارير ساعات العمل والمعايرات في UECC Survey." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: () => (
     <Protected>
       <ReportsPage />

@@ -19,6 +19,16 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/users")({
+  head: () => ({
+    meta: [
+      { title: "إدارة المستخدمين — UECC Survey" },
+      { name: "description", content: "إدارة حسابات المستخدمين وصلاحيات الدخول إلى UECC Survey." },
+      { property: "og:title", content: "إدارة المستخدمين — UECC Survey" },
+      { property: "og:description", content: "إدارة صلاحيات ومسارات موافقة مستخدمي النظام." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: () => (
     <Protected adminOnly>
       <UsersPage />

@@ -11,6 +11,16 @@ import { GoogleAuthButton } from "@/components/GoogleAuthButton";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
+  head: () => ({
+    meta: [
+      { title: "تسجيل الدخول — UECC Survey" },
+      { name: "description", content: "تسجيل دخول الموظفين والمديرين إلى نظام UECC Survey." },
+      { property: "og:title", content: "تسجيل الدخول — UECC Survey" },
+      { property: "og:description", content: "الوصول الآمن إلى نظام UECC Survey." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: LoginPage,
 });
 

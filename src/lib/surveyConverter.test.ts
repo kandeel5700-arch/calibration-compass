@@ -16,6 +16,7 @@ import {
 describe("survey coordinate conversion", () => {
   it("parses labeled coordinate rows and comma decimals", () => {
     const points = parseCoordinateRows([
+      ["Villa 14 coordinates"],
       ["PC", "N", "E", "Z", "Description"],
       ["A1", "25,125", "100.5", "3.25", "control"],
     ]);

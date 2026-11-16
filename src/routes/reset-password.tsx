@@ -10,6 +10,16 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/reset-password")({
+  head: () => ({
+    meta: [
+      { title: "تعيين كلمة مرور جديدة — UECC Survey" },
+      { name: "description", content: "اختر كلمة مرور جديدة وآمنة لحساب UECC Survey." },
+      { property: "og:title", content: "تعيين كلمة مرور جديدة — UECC Survey" },
+      { property: "og:description", content: "إكمال استعادة حساب UECC Survey." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: ResetPasswordPage,
 });
 

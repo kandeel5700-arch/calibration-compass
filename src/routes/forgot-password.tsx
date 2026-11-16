@@ -10,6 +10,16 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/forgot-password")({
+  head: () => ({
+    meta: [
+      { title: "استعادة كلمة المرور — UECC Survey" },
+      { name: "description", content: "أرسل رابطاً آمناً لإعادة تعيين كلمة مرور حساب UECC Survey." },
+      { property: "og:title", content: "استعادة كلمة المرور — UECC Survey" },
+      { property: "og:description", content: "استعد الوصول إلى حسابك في UECC Survey." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: ForgotPasswordPage,
 });
 

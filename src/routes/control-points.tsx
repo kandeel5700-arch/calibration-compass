@@ -49,6 +49,16 @@ import * as XLSX from "xlsx";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/control-points")({
+  head: () => ({
+    meta: [
+      { title: "النقاط المساحية — UECC Survey" },
+      { name: "description", content: "إدارة نقاط التحكم المساحية وإحداثياتها في UECC Survey." },
+      { property: "og:title", content: "النقاط المساحية — UECC Survey" },
+      { property: "og:description", content: "عرض وإدارة نقاط التحكم والإحداثيات المساحية." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: () => (
     <Protected>
       <ControlPointsPage />

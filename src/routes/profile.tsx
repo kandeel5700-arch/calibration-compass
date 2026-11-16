@@ -12,6 +12,16 @@ import { toast } from "sonner";
 import { User as UserIcon, Mail, Shield, Save, KeyRound, Wallet, Camera, Loader2, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/profile")({
+  head: () => ({
+    meta: [
+      { title: "الملف الشخصي — UECC Survey" },
+      { name: "description", content: "إدارة بيانات الملف الشخصي والصورة والأجر اليومي في UECC Survey." },
+      { property: "og:title", content: "الملف الشخصي — UECC Survey" },
+      { property: "og:description", content: "بيانات المستخدم وإعدادات الحساب الشخصية." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: () => (
     <Protected>
       <ProfilePage />

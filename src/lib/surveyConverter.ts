@@ -66,12 +66,26 @@ export function parseCoordinateRows(rows: unknown[][]): SurveyPoint[] {
   const cleaned = rows.filter((row) => row.some((cell) => String(cell ?? "").trim() !== ""));
   if (!cleaned.length) return [];
 
-  const headers = cleaned[0].map(headerKey);
-  const pointColumn = findHeader(headers, POINT_HEADERS);
-  const eastColumn = findHeader(headers, EAST_HEADERS);
-  const northColumn = findHeader(headers, NORTH_HEADERS);
-  const hasHeaders = pointColumn >= 0 && eastColumn >= 0 && northColumn >= 0;
-  const startIndex = hasHeaders ? 1 : 0;
+  let headerRow = -1;
+  let pointColumn = -1;
+  let eastColumn = -1;
+  let northColumn = -1;
+  for (let rowIndex = 0; rowIndex < Math.min(cleaned.length, 12); rowIndex += 1) {
+    const headers = cleaned[rowIndex].map(headerKey);
+    const candidatePoint = findHeader(headers, POINT_HEADERS);
+    const candidateEast = findHeader(headers, EAST_HEADERS);
+    const candidateNorth = findHeader(headers, NORTH_HEADERS);
+    if (candidatePoint >= 0 && candidateEast >= 0 && candidateNorth >= 0) {
+      headerRow = rowIndex;
+      pointColumn = candidatePoint;
+      eastColumn = candidateEast;
+      northColumn = candidateNorth;
+      break;
+    }
+  }
+  const hasHeaders = headerRow >= 0;
+  const startIndex = hasHeaders ? headerRow + 1 : 0;
+  const headers = hasHeaders ? cleaned[headerRow].map(headerKey) : [];
   const indices = hasHeaders
     ? {
         point: pointColumn,
@@ -231,6 +245,11 @@ export function serializeCoordinates(points: SurveyPoint[], includeElevation: bo
 }
 
 export function serializeDxf(points: SurveyPoint[]): string {
+  const minE = points.reduce((min, point) => Math.min(min, point.easting), Infinity);
+  const maxE = points.reduce((max, point) => Math.max(max, point.easting), -Infinity);
+  const minN = points.reduce((min, point) => Math.min(min, point.northing), Infinity);
+  const maxN = points.reduce((max, point) => Math.max(max, point.northing), -Infinity);
+  const labelOffset = Math.max(maxE - minE, maxN - minN, 1) * 0.01;
   const lines = [
     "0", "SECTION", "2", "HEADER", "9", "$ACADVER", "1", "AC1009",
     "0", "ENDSEC", "0", "SECTION", "2", "TABLES", "0", "TABLE", "2", "LAYER", "70", "2",
@@ -241,7 +260,7 @@ export function serializeDxf(points: SurveyPoint[]): string {
   for (const point of points) {
     const z = point.elevation ?? 0;
     lines.push("0", "POINT", "8", "POINTS", "10", String(point.easting), "20", String(point.northing), "30", String(z));
-    lines.push("0", "TEXT", "8", "LABELS", "10", String(point.easting), "20", String(point.northing), "30", String(z), "40", "1.5", "1", point.point);
+    lines.push("0", "TEXT", "8", "LABELS", "10", String(point.easting + labelOffset), "20", String(point.northing + labelOffset), "30", String(z), "40", String(labelOffset), "1", point.point.replace(/[\r\n]/g, " "));
   }
   lines.push("0", "ENDSEC", "0", "EOF");
   return lines.join("\r\n");

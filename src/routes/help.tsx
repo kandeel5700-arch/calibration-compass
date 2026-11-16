@@ -18,6 +18,16 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/help")({
+  head: () => ({
+    meta: [
+      { title: "مركز المساعدة — UECC Survey" },
+      { name: "description", content: "إجابات وإرشادات استخدام نظام UECC Survey." },
+      { property: "og:title", content: "مركز المساعدة — UECC Survey" },
+      { property: "og:description", content: "دليل استخدام صفحات الحضور والأجهزة والصلاحيات." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: () => (
     <Protected>
       <HelpPage />

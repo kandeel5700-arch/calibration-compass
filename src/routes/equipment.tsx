@@ -36,6 +36,16 @@ import { cn } from "@/lib/utils";
 import { getStatus, STATUS_LABELS, STATUS_COLORS, daysUntil, type Equipment } from "@/lib/equipment";
 
 export const Route = createFileRoute("/equipment")({
+  head: () => ({
+    meta: [
+      { title: "إدارة الأجهزة — UECC Survey" },
+      { name: "description", content: "إدارة أجهزة المساحة وأرقامها التسلسلية وحالة معايرتها." },
+      { property: "og:title", content: "إدارة الأجهزة — UECC Survey" },
+      { property: "og:description", content: "سجل أجهزة المساحة وتواريخ المعايرة والصلاحية." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: () => (
     <Protected>
       <EquipmentPage />

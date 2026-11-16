@@ -22,6 +22,16 @@ import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/dashboard")({
+  head: () => ({
+    meta: [
+      { title: "لوحة الأجهزة — UECC Survey" },
+      { name: "description", content: "ملخص حالة أجهزة المساحة ومواعيد المعايرة في UECC Survey." },
+      { property: "og:title", content: "لوحة الأجهزة — UECC Survey" },
+      { property: "og:description", content: "لوحة متابعة الأجهزة والمعايرات والتنبيهات." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: () => (
     <Protected>
       <Dashboard />

@@ -97,7 +97,11 @@ function SurveyConverterPage() {
         if (Array.isArray(parsed)) setHistory(parsed.slice(0, 10) as RecentProject[]);
       }
     } catch {
-      localStorage.removeItem(HISTORY_KEY);
+      try {
+        localStorage.removeItem(HISTORY_KEY);
+      } catch {
+        // Storage may be disabled; the converter remains usable without history.
+      }
     }
     setHistoryReady(true);
   }, []);
@@ -111,16 +115,20 @@ function SurveyConverterPage() {
       source: sourceName,
       savedAt: new Date().toISOString(),
     };
-    setHistory((previous) => {
-      const next = [current, ...previous.filter((project) => project.id !== projectId)].slice(0, 10);
+    setHistory((previous) => [current, ...previous.filter((project) => project.id !== projectId)].slice(0, 10));
+  }, [historyReady, projectId, projectName, points, sourceName]);
+
+  useEffect(() => {
+    if (!historyReady) return;
+    const timer = window.setTimeout(() => {
       try {
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
       } catch {
         toast.error("تعذر حفظ المشروع في سجل المتصفح");
       }
-      return next;
-    });
-  }, [historyReady, projectId, projectName, points, sourceName]);
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [history, historyReady]);
 
   const adjustedPoints = useMemo(() =>
     applyCoordinateOptions(points, {
@@ -273,7 +281,7 @@ function SurveyConverterPage() {
           point.northing,
           ...(includeElevation ? [point.elevation] : []),
         ]);
-        row.eachCell((cell, columnNumber) => {
+        row.eachCell({ includeEmpty: true }, (cell, columnNumber) => {
           cell.font = { name: "Arial", size: 10 };
           cell.alignment = { horizontal: columnNumber === 1 ? "left" : "right", vertical: "middle" };
           cell.border = gridBorder();
@@ -531,13 +539,13 @@ function SurveyConverterPage() {
           </div>
           <div className="grid gap-x-5 sm:grid-cols-2 xl:grid-cols-3">
             {history.map((project) => (
-              <button key={project.id} type="button" onClick={() => loadRecent(project)} className="flex min-w-0 items-center justify-between gap-3 border-b border-border py-3 text-right transition-colors hover:bg-muted/40">
+              <Button key={project.id} type="button" variant="ghost" onClick={() => loadRecent(project)} className="h-auto w-full min-w-0 justify-between gap-3 rounded-none border-b border-border px-2 py-3 text-right">
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-semibold">{project.name}</span>
                   <span className="mt-1 block text-xs text-muted-foreground">{project.points.length} نقطة · {new Date(project.savedAt).toLocaleString("ar-EG")}</span>
                 </span>
                 <Download className="h-4 w-4 shrink-0 text-muted-foreground" />
-              </button>
+              </Button>
             ))}
           </div>
         </section>
@@ -559,10 +567,10 @@ function SurveyPlot({ points, flags }: { points: SurveyPoint[]; flags: ReturnTyp
   const width = 620;
   const height = 320;
   const margin = 30;
-  const minE = Math.min(...points.map((point) => point.easting));
-  const maxE = Math.max(...points.map((point) => point.easting));
-  const minN = Math.min(...points.map((point) => point.northing));
-  const maxN = Math.max(...points.map((point) => point.northing));
+  const minE = points.reduce((min, point) => Math.min(min, point.easting), Infinity);
+  const maxE = points.reduce((max, point) => Math.max(max, point.easting), -Infinity);
+  const minN = points.reduce((min, point) => Math.min(min, point.northing), Infinity);
+  const maxN = points.reduce((max, point) => Math.max(max, point.northing), -Infinity);
   const rangeE = maxE - minE || 1;
   const rangeN = maxN - minN || 1;
   return (

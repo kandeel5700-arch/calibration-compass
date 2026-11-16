@@ -12,6 +12,16 @@ import { GoogleAuthButton } from "@/components/GoogleAuthButton";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/signup")({
+  head: () => ({
+    meta: [
+      { title: "إنشاء حساب — UECC Survey" },
+      { name: "description", content: "إنشاء حساب موظف جديد في نظام UECC Survey." },
+      { property: "og:title", content: "إنشاء حساب — UECC Survey" },
+      { property: "og:description", content: "التسجيل للانضمام إلى فريق UECC Survey." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: SignupPage,
 });
 
