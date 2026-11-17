@@ -15,3 +15,5 @@
 - [x] Add editable coordinate preview, validation, offsets, axis swap, elevation toggle, and plot.
 - [x] Save the 10 most recent projects locally and verify parsing/serialization for supported formats.
 - [ ] Verify the signed-in page and actual file downloads in a browser — blocked until a preview account is signed in.
+- [ ] Import a DXF base drawing, render it with survey points, and support pan/zoom plus manual point placement.
+- [ ] Append imported/manual points to the drawing on download and add DXF output to the office-file conversion workflow.

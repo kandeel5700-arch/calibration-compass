@@ -4,4 +4,4 @@
 - Load ExcelJS and PDF export libraries only when exporting; this keeps the attendance page lightweight and SSR safe.
 - Employee Excel form layout lives in a dedicated browser-safe formatter using the shared report model; this separates paper styling from payroll calculations.
 - Keep profile emails private behind owner/admin row access and expose only name/avatar through an approved-staff directory view, so staff screens can identify coworkers without leaking account contact data.
-- Keep survey coordinate parsing and format serialization in a browser-safe pure utility shared by the converter page, so previews and exports use consistent transformations without SSR file access.
+- Keep survey coordinate and CAD parsing/serialization in browser-safe pure utilities shared by the converter page, so the drawing preview and every export use consistent coordinates without SSR file access.
