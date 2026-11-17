@@ -69,7 +69,7 @@ function downloadText(content: string, filename: string, mime = "text/plain;char
   anchor.href = url;
   anchor.download = filename;
   anchor.click();
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function SurveyConverterPage() {
@@ -300,7 +300,7 @@ function SurveyConverterPage() {
       anchor.href = url;
       anchor.download = projectFileName(projectName, "xlsx");
       anchor.click();
-      URL.revokeObjectURL(url);
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
       toast.success("تم تجهيز ملف Excel");
     } catch (error) {
       toast.error("تعذر تصدير Excel", { description: error instanceof Error ? error.message : "حدث خطأ أثناء إنشاء الملف." });

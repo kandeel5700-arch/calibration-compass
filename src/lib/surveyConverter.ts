@@ -178,7 +178,8 @@ function parseGsi(text: string): SurveyPoint[] {
     const rawEast = words.get("81");
     const rawNorth = words.get("82");
     if (!rawPoint || !rawEast || !rawNorth) return;
-    const point = rawPoint.trim().replace(/^[+-]/, "").replace(/^0+(?=\d)/, "");
+    const pointValue = rawPoint.trim().replace(/^[+-]/, "");
+    const point = /^\d+$/.test(pointValue) ? pointValue.replace(/^0+(?=\d)/, "") : pointValue;
     const elevation = parseGsiValue(words.get("83"));
     const result = makePoint(index, point, parseGsiValue(rawEast), parseGsiValue(rawNorth), elevation);
     if (result) points.push(result);
@@ -273,7 +274,7 @@ export function serializeGsi(points: SurveyPoint[], includeElevation: boolean): 
     const encoded = isNumber
       ? String(Math.round(Math.abs(value) * 1000)).padStart(16, "0")
       : String(value).slice(0, 16).padEnd(16, " ");
-    return `*${index}${index === "11" ? "0000" : "..00"}${sign}${encoded}`;
+    return `*${index}${index === "11" ? "0001" : "..00"}${sign}${encoded}`;
   };
   return points
     .map((point) => {

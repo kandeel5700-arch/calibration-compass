@@ -42,6 +42,16 @@ describe("survey coordinate conversion", () => {
     assert.equal(imported[0]?.elevation, 2.5);
   });
 
+  it("keeps alphanumeric point identifiers and reads common GSI-8 coordinate words", () => {
+    const points = parseSurveyFileText(
+      "110001+0000A110 81..00+00005387 82..00-00000992",
+      "gsi",
+    );
+    assert.equal(points[0]?.point, "0000A110");
+    assert.equal(points[0]?.easting, 5.387);
+    assert.equal(points[0]?.northing, -0.992);
+  });
+
   it("exports SDR coordinate records using the fixed-width point fields", () => {
     const source: SurveyPoint[] = [{ id: "p1", point: "P1", easting: 10.25, northing: 20.5, elevation: 3, description: "" }];
     const output = serializeSdr(source);

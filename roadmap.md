@@ -13,4 +13,5 @@
 # Survey Data Converter
 - [x] Add a responsive Arabic survey-conversion page with bidirectional file import/export.
 - [x] Add editable coordinate preview, validation, offsets, axis swap, elevation toggle, and plot.
-- [ ] Add local recent-project history and verify file parsing/export paths.
+- [x] Save the 10 most recent projects locally and verify parsing/serialization for supported formats.
+- [ ] Verify the signed-in page and actual file downloads in a browser — blocked until a preview account is signed in.
