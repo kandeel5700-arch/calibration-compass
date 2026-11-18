@@ -12,6 +12,7 @@ import {
   serializeSdr,
   type SurveyPoint,
 } from "./surveyConverter";
+import { appendPointsToDxf, parseDxfDrawing } from "./surveyDxf";
 
 describe("survey coordinate conversion", () => {
   it("parses labeled coordinate rows and comma decimals", () => {
@@ -78,5 +79,25 @@ describe("survey coordinate conversion", () => {
     assert.equal(changed[0]?.northing, 98);
     assert.match(serializeCoordinates(changed, false), /^PC\tE\tN/);
     assert.match(serializeDxf(changed), /\r\nPOINTS\r\n/);
+  });
+
+  it("parses a base DXF drawing and appends exported points without removing original geometry", () => {
+    const drawing = [
+      "0", "SECTION", "2", "ENTITIES",
+      "0", "LINE", "8", "WALLS", "10", "0", "20", "0", "11", "100", "21", "0",
+      "0", "CIRCLE", "8", "DETAIL", "10", "50", "20", "30", "40", "5",
+      "0", "ENDSEC", "0", "EOF",
+    ].join("\r\n");
+    const parsed = parseDxfDrawing(drawing);
+    assert.equal(parsed.entities.length, 2);
+    assert.deepEqual(parsed.bounds, { minX: 0, minY: 0, maxX: 100, maxY: 35 });
+    const result = appendPointsToDxf(drawing, [
+      { id: "new", point: "P1", easting: 25, northing: 40, elevation: 3, description: "" },
+    ]);
+    const reloaded = parseDxfDrawing(result);
+    assert.equal(reloaded.entities.length, 4);
+    assert.equal(reloaded.bounds.maxY, 40.5);
+    assert.match(result, /\r\nPOINTS\r\n/);
+    assert.match(result, /\r\nLABELS\r\n/);
   });
 });

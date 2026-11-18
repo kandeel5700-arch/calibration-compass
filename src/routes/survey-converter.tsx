@@ -8,10 +8,16 @@ import {
   FileSpreadsheet,
   FileText,
   History,
+  Hand,
   MapPinned,
+  Maximize2,
+  MousePointer2,
+  Plus,
   RotateCcw,
   Trash2,
   Upload,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import { Protected } from "@/components/Protected";
 import { Button } from "@/components/ui/button";
@@ -33,6 +39,14 @@ import {
   serializeSdr,
   type SurveyPoint,
 } from "@/lib/surveyConverter";
+import {
+  appendPointsToDxf,
+  arcVertices,
+  dxfBoundsWithPoints,
+  parseDxfDrawing,
+  type DxfEntity,
+  type ParsedDxf,
+} from "@/lib/surveyDxf";
 
 export const Route = createFileRoute("/survey-converter")({
   head: () => ({
@@ -77,6 +91,10 @@ function SurveyConverterPage() {
   const [projectName, setProjectName] = useState("");
   const [points, setPoints] = useState<SurveyPoint[]>([]);
   const [sourceName, setSourceName] = useState("");
+  const [cadContent, setCadContent] = useState<string | null>(null);
+  const [cadFileName, setCadFileName] = useState("");
+  const [cadDrawing, setCadDrawing] = useState<ParsedDxf | null>(null);
+  const [manualPointMode, setManualPointMode] = useState(false);
   const [pasteText, setPasteText] = useState("");
   const [includeElevation, setIncludeElevation] = useState(false);
   const [swapAxes, setSwapAxes] = useState(false);
@@ -88,6 +106,7 @@ function SurveyConverterPage() {
   const [busy, setBusy] = useState(false);
   const fieldFileRef = useRef<HTMLInputElement>(null);
   const officeFileRef = useRef<HTMLInputElement>(null);
+  const cadFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     try {
@@ -152,7 +171,16 @@ function SurveyConverterPage() {
     try {
       const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
       let imported: SurveyPoint[] = [];
-      if (extension === "xlsx" || extension === "xls") {
+      if (extension === "dxf") {
+        const text = await file.text();
+        const drawing = parseDxfDrawing(text);
+        setCadContent(text);
+        setCadFileName(file.name);
+        setCadDrawing(drawing);
+        setSourceName(file.name);
+        toast.success(`تم فتح اللوحة · ${drawing.entities.length} عنصر`);
+        return;
+      } else if (extension === "xlsx" || extension === "xls") {
         const XLSX = await import("xlsx");
         const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
         const firstSheet = workbook.Sheets[workbook.SheetNames[0] ?? ""];
@@ -239,6 +267,10 @@ function SurveyConverterPage() {
     setSwapAxes(false);
     setDeltaE("0");
     setDeltaN("0");
+    setCadContent(null);
+    setCadFileName("");
+    setCadDrawing(null);
+    setManualPointMode(false);
   }
 
   function loadRecent(project: RecentProject) {
@@ -310,16 +342,41 @@ function SurveyConverterPage() {
   }
 
   function exportFile(format: "txt" | "dxf" | "gsi" | "sdr") {
-    if (!requireProjectName() || !adjustedPoints.length) return;
-    const content = format === "dxf"
-      ? serializeDxf(adjustedPoints)
-      : format === "gsi"
-        ? serializeGsi(adjustedPoints, includeElevation)
-        : format === "sdr"
-          ? serializeSdr(adjustedPoints)
-          : serializeCoordinates(adjustedPoints, includeElevation);
-    downloadText(content, projectFileName(projectName, format), format === "dxf" ? "application/dxf;charset=utf-8" : "text/plain;charset=utf-8");
-    toast.success(`تم تصدير ${format.toUpperCase()}`);
+    if (!requireProjectName() || (!adjustedPoints.length && !(format === "dxf" && cadContent))) return;
+    try {
+      const content = format === "dxf"
+        ? cadContent ? appendPointsToDxf(cadContent, adjustedPoints) : serializeDxf(adjustedPoints)
+        : format === "gsi"
+          ? serializeGsi(adjustedPoints, includeElevation)
+          : format === "sdr"
+            ? serializeSdr(adjustedPoints)
+            : serializeCoordinates(adjustedPoints, includeElevation);
+      downloadText(content, projectFileName(projectName, format), format === "dxf" ? "application/dxf;charset=utf-8" : "text/plain;charset=utf-8");
+      toast.success(format === "dxf" && cadContent ? "تم تنزيل لوحة CAD بعد إضافة النقاط" : `تم تصدير ${format.toUpperCase()}`);
+    } catch (error) {
+      toast.error("تعذر تصدير الملف", { description: error instanceof Error ? error.message : "حدث خطأ أثناء تجهيز الملف." });
+    }
+  }
+
+  function addManualPoint(easting: number, northing: number) {
+    if (!manualPointMode) return;
+    if (!requireProjectName()) return;
+    const nextNumber = points.reduce((max, point) => {
+      const match = point.point.match(/^CAD-(\d+)$/i);
+      return match ? Math.max(max, Number(match[1])) : max;
+    }, 0) + 1;
+    const point: SurveyPoint = {
+      id: crypto.randomUUID(),
+      point: `CAD-${String(nextNumber).padStart(3, "0")}`,
+      easting: Number((swapAxes ? northing - (Number(deltaN) || 0) : easting - (Number(deltaE) || 0)).toFixed(3)),
+      northing: Number((swapAxes ? easting - (Number(deltaE) || 0) : northing - (Number(deltaN) || 0)).toFixed(3)),
+      elevation: null,
+      description: "نقطة يدوية على اللوحة",
+    };
+    setPoints((current) => [...current, point]);
+    if (!projectId) setProjectId(crypto.randomUUID());
+    setSourceName((current) => current || "نقطة مرسومة يدوياً");
+    toast.success(`تمت إضافة النقطة ${point.point}`);
   }
 
   return (
@@ -358,6 +415,27 @@ function SurveyConverterPage() {
             <p className="mt-1 text-xs text-muted-foreground">إضافة عمود الارتفاع في المعاينة والتصدير.</p>
           </div>
           <Switch id="include-z" checked={includeElevation} onCheckedChange={setIncludeElevation} />
+        </div>
+      </section>
+
+      <section className="flex flex-col justify-between gap-3 border-y border-border py-4 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-3">
+          <MapPinned className="h-5 w-5 text-primary" />
+          <div>
+            <h2 className="font-bold">لوحة CAD</h2>
+            <p className="text-xs text-muted-foreground">{cadFileName || "لم يتم اختيار لوحة بعد"}</p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <input ref={cadFileRef} type="file" accept=".dxf" onChange={readFileFromInput} className="hidden" />
+          <Button variant="outline" onClick={() => requireProjectName() && cadFileRef.current?.click()} disabled={busy} className="gap-2">
+            <Upload className="h-4 w-4" /> {cadFileName ? "تغيير اللوحة" : "إضافة لوحة CAD"}
+          </Button>
+          {cadContent && (
+            <Button variant="outline" onClick={() => exportFile("dxf")} disabled={!adjustedPoints.length} className="gap-2">
+              <Download className="h-4 w-4" /> تنزيل اللوحة بالنقط
+            </Button>
+          )}
         </div>
       </section>
 
@@ -429,6 +507,33 @@ function SurveyConverterPage() {
           </section>
         </TabsContent>
       </Tabs>
+
+      {cadDrawing && (
+        <section className="space-y-3 border-y border-border py-5">
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+            <div>
+              <h2 className="font-bold">معاينة اللوحة والنقط</h2>
+              <p className="mt-1 text-xs text-muted-foreground">{cadDrawing.entities.length} عنصر CAD · {adjustedPoints.length} نقطة مساحية</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant={manualPointMode ? "default" : "outline"} size="sm" onClick={() => setManualPointMode((value) => !value)} className="gap-2">
+                {manualPointMode ? <MousePointer2 className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                {manualPointMode ? "إيقاف إضافة النقاط" : "إضافة نقطة يدوية"}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => exportFile("dxf")} disabled={!projectName.trim()} className="gap-2">
+                <Download className="h-4 w-4" /> تنزيل اللوحة بالنقط
+              </Button>
+            </div>
+          </div>
+          <DxfBoard
+            drawing={cadDrawing}
+            points={adjustedPoints}
+            flags={flags}
+            manualPointMode={manualPointMode}
+            onAddPoint={addManualPoint}
+          />
+        </section>
+      )}
 
       {points.length > 0 ? (
         <>
@@ -587,6 +692,204 @@ function SurveyPlot({ points, flags }: { points: SurveyPoint[]; flags: ReturnTyp
         <text x={width / 2} y={height - 5} textAnchor="middle" className="fill-muted-foreground" fontSize="12">E</text>
         <text x="12" y={height / 2} textAnchor="middle" className="fill-muted-foreground" fontSize="12" transform={`rotate(-90 12 ${height / 2})`}>N</text>
       </svg>
+    </div>
+  );
+}
+
+interface ViewBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+function fitViewBox(bounds: ParsedDxf["bounds"], aspect = 1.55): ViewBox {
+  const centerX = (bounds.minX + bounds.maxX) / 2;
+  const centerY = (bounds.minY + bounds.maxY) / 2;
+  let width = Math.max(bounds.maxX - bounds.minX, 1) * 1.1;
+  let height = Math.max(bounds.maxY - bounds.minY, 1) * 1.1;
+  if (width / height > aspect) height = width / aspect;
+  else width = height * aspect;
+  return { x: centerX - width / 2, y: -centerY - height / 2, width, height };
+}
+
+function DxfBoard({
+  drawing,
+  points,
+  flags,
+  manualPointMode,
+  onAddPoint,
+}: {
+  drawing: ParsedDxf;
+  points: SurveyPoint[];
+  flags: ReturnType<typeof detectPointFlags>;
+  manualPointMode: boolean;
+  onAddPoint: (easting: number, northing: number) => void;
+}) {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const dragStart = useRef<{ id: number; x: number; y: number; view: ViewBox; moved: boolean } | null>(null);
+  const bounds = useMemo(() => dxfBoundsWithPoints(drawing, points), [drawing, points]);
+  const [view, setView] = useState(() => fitViewBox(bounds));
+
+  function zoomAtCenter(factor: number) {
+    setView((current) => {
+      const width = Math.min(Math.max(current.width * factor, (bounds.maxX - bounds.minX) / 200), (bounds.maxX - bounds.minX) * 10);
+      const height = Math.min(Math.max(current.height * factor, (bounds.maxY - bounds.minY) / 200), (bounds.maxY - bounds.minY) * 10);
+      return {
+        x: current.x + (current.width - width) / 2,
+        y: current.y + (current.height - height) / 2,
+        width,
+        height,
+      };
+    });
+  }
+
+  useEffect(() => {
+    setView(fitViewBox(bounds));
+  }, [drawing, points.length]);
+
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const rect = svg.getBoundingClientRect();
+      const ratioX = (event.clientX - rect.left) / rect.width;
+      const ratioY = (event.clientY - rect.top) / rect.height;
+      const factor = Math.exp(event.deltaY * 0.0012);
+      setView((current) => {
+        const width = Math.min(Math.max(current.width * factor, (bounds.maxX - bounds.minX) / 200), (bounds.maxX - bounds.minX) * 10);
+        const height = Math.min(Math.max(current.height * factor, (bounds.maxY - bounds.minY) / 200), (bounds.maxY - bounds.minY) * 10);
+        return {
+          x: current.x + (current.width - width) * ratioX,
+          y: current.y + (current.height - height) * ratioY,
+          width,
+          height,
+        };
+      });
+    };
+    svg.addEventListener("wheel", onWheel, { passive: false });
+    return () => svg.removeEventListener("wheel", onWheel);
+  }, [bounds]);
+
+  function onPointerDown(event: React.PointerEvent<SVGSVGElement>) {
+    if (manualPointMode || event.button !== 0) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragStart.current = { id: event.pointerId, x: event.clientX, y: event.clientY, view, moved: false };
+  }
+
+  function onPointerMove(event: React.PointerEvent<SVGSVGElement>) {
+    const drag = dragStart.current;
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (drag && drag.id === event.pointerId) {
+      const dx = event.clientX - drag.x;
+      const dy = event.clientY - drag.y;
+      if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+      setView({
+        ...drag.view,
+        x: drag.view.x - (dx / rect.width) * drag.view.width,
+        y: drag.view.y - (dy / rect.height) * drag.view.height,
+      });
+      return;
+    }
+    if (!manualPointMode) return;
+    const nextX = view.x + ((event.clientX - rect.left) / rect.width) * view.width;
+    const nextY = view.y + ((event.clientY - rect.top) / rect.height) * view.height;
+    event.currentTarget.dataset.coordinates = `${nextX},${-nextY}`;
+  }
+
+  function onPointerUp(event: React.PointerEvent<SVGSVGElement>) {
+    const drag = dragStart.current;
+    if (manualPointMode) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const east = view.x + ((event.clientX - rect.left) / rect.width) * view.width;
+      const north = -(view.y + ((event.clientY - rect.top) / rect.height) * view.height);
+      onAddPoint(east, north);
+    }
+    if (!manualPointMode && drag?.id === event.pointerId && !drag.moved) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const east = view.x + ((event.clientX - rect.left) / rect.width) * view.width;
+      const north = -(view.y + ((event.clientY - rect.top) / rect.height) * view.height);
+      onAddPoint(east, north);
+    }
+    dragStart.current = null;
+  }
+
+  function renderEntity(entity: DxfEntity, index: number) {
+    const strokeClass = "stroke-muted-foreground/65";
+    if (entity.kind === "line") {
+      const [start, end] = entity.points;
+      return <line key={index} x1={start.x} y1={-start.y} x2={end.x} y2={-end.y} className={strokeClass} strokeWidth="0.8" vectorEffect="non-scaling-stroke" />;
+    }
+    if (entity.kind === "polyline" || entity.kind === "arc") {
+      const vertices = entity.kind === "arc" ? arcVertices(entity.center, entity.radius, entity.startAngle, entity.endAngle) : entity.points;
+      const coordinates = vertices.map((point) => `${point.x},${-point.y}`).join(" ");
+      return entity.kind === "polyline"
+        ? <polyline key={index} points={`${coordinates}${entity.closed ? " " + vertices[0]?.x + "," + -(vertices[0]?.y ?? 0) : ""}`} className={strokeClass} fill="none" strokeWidth="0.8" vectorEffect="non-scaling-stroke" />
+        : <polyline key={index} points={coordinates} className={strokeClass} fill="none" strokeWidth="0.8" vectorEffect="non-scaling-stroke" />;
+    }
+    if (entity.kind === "circle") {
+      return <circle key={index} cx={entity.center.x} cy={-entity.center.y} r={entity.radius} className={strokeClass} fill="none" strokeWidth="0.8" vectorEffect="non-scaling-stroke" />;
+    }
+    if (entity.kind === "point") {
+      return <circle key={index} cx={entity.point.x} cy={-entity.point.y} r={Math.max(view.width * 0.002, 0.03)} className="fill-muted-foreground/70" />;
+    }
+    return (
+      <g key={index} transform={`translate(${entity.point.x} ${-entity.point.y}) scale(1 -1)`}>
+        <text x="0" y="0" fontSize={Math.max(entity.height, view.width * 0.002)} className="fill-muted-foreground/70">{entity.text.slice(0, 80)}</text>
+      </g>
+    );
+  }
+
+  return (
+    <div className="overflow-hidden border border-border bg-card">
+      <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
+        <span className="text-xs text-muted-foreground">{view.width.toFixed(1)} × {view.height.toFixed(1)}</span>
+        <div className="flex gap-1">
+          <Button type="button" variant="ghost" size="icon" className="h-8 w-8" aria-label="تكبير اللوحة" title="تكبير" onClick={() => zoomAtCenter(0.75)}><ZoomIn className="h-4 w-4" /></Button>
+          <Button type="button" variant="ghost" size="icon" className="h-8 w-8" aria-label="تصغير اللوحة" title="تصغير" onClick={() => zoomAtCenter(1.33)}><ZoomOut className="h-4 w-4" /></Button>
+          <Button type="button" variant="ghost" size="icon" className="h-8 w-8" aria-label="ملاءمة اللوحة" title="إظهار اللوحة كاملة" onClick={() => setView(fitViewBox(bounds))}><Maximize2 className="h-4 w-4" /></Button>
+        </div>
+      </div>
+      <svg
+          ref={svgRef}
+          viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`}
+          role="img"
+          aria-label="لوحة CAD مع نقاط المساحة"
+          className={`block h-[360px] w-full touch-none sm:h-[480px] ${manualPointMode ? "cursor-crosshair" : "cursor-grab active:cursor-grabbing"}`}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={() => { dragStart.current = null; }}
+        >
+          <g>
+            {drawing.entities.map(renderEntity)}
+            {points.map((point) => {
+              const flag = flags[point.id];
+              const className = flag?.outlier ? "fill-destructive" : flag?.duplicate ? "fill-warning" : "fill-primary";
+              const radius = Math.max(view.width * 0.003, 0.05);
+              return (
+                <g key={point.id}>
+                  <circle cx={point.easting} cy={-point.northing} r={radius * 1.8} className={`${className} opacity-20`} />
+                  <circle cx={point.easting} cy={-point.northing} r={radius} className={className}>
+                    <title>{`${point.point} · E ${point.easting} · N ${point.northing}`}</title>
+                  </circle>
+                  <g transform={`translate(${point.easting + radius * 1.5} ${-point.northing - radius * 1.5}) scale(1 -1)`}>
+                    <text x="0" y="0" fontSize={Math.max(view.width * 0.015, radius * 2.2)} className={className}>{point.point}</text>
+                  </g>
+                </g>
+              );
+            })}
+          </g>
+        </svg>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-3 py-2 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5">{manualPointMode ? <MousePointer2 className="h-3.5 w-3.5 text-primary" /> : <Hand className="h-3.5 w-3.5" />}{manualPointMode ? "إضافة يدوية" : "تحريك اللوحة"}</span>
+        <span className="inline-flex items-center gap-3">
+          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-primary" /> نقطة</span>
+          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-warning" /> مكرر</span>
+          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-destructive" /> شاذ</span>
+        </span>
+      </div>
     </div>
   );
 }

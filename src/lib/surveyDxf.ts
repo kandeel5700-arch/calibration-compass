@@ -28,6 +28,7 @@ const EMPTY_BOUNDS = { minX: -10, minY: -10, maxX: 10, maxY: 10 };
 
 function parsePairs(content: string): Pair[] {
   if (content.includes("\u0000")) throw new Error("ملفات DXF الثنائية غير مدعومة؛ احفظ اللوحة بصيغة DXF نصية.");
+  if (content.length > 20_000_000) throw new Error("حجم لوحة DXF أكبر من الحد المدعوم (20 ميجابايت).");
   const lines = content.replace(/^\uFEFF/, "").split(/\r?\n/);
   const pairs: Pair[] = [];
   for (let index = 0; index + 1 < lines.length; index += 2) {
@@ -210,6 +211,8 @@ function appendLayerDefinitions(pairs: Pair[]): Pair[] {
       }
     }
     if (layerTableStart >= 0 && layerTableEnd >= 0) {
+      const countPair = pairs.slice(layerTableStart, layerTableEnd).find((pair) => pair.code === 70);
+      if (countPair) countPair.value = String(Number(countPair.value) + newLayers.filter((pair) => pair.value === "LAYER").length);
       pairs.splice(layerTableEnd, 0, ...newLayers);
       return pairs;
     }
@@ -231,6 +234,7 @@ function appendLayerDefinitions(pairs: Pair[]): Pair[] {
 }
 
 export function appendPointsToDxf(content: string, points: SurveyPoint[]): string {
+  if (!points.length) return content;
   const pairs = parsePairs(content);
   let entityEnd = -1;
   for (let index = 0; index < pairs.length - 2; index += 1) {
